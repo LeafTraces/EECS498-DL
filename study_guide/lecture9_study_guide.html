@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lecture 9: Hardware and Software — 深度讲解</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf9f6;--text:#1a1a2e;--accent:#2563eb;--accent-light:#dbeafe;--green:#059669;--green-light:#d1fae5;--red:#dc2626;--red-light:#fee2e2;--orange:#d97706;--orange-light:#fef3c7;--purple:#7c3aed;--purple-light:#ede9fe;--border:#e5e7eb;--code-bg:#1e293b;--card-shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans SC','Source Serif 4',serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:16px}
+.container{max-width:820px;margin:0 auto;padding:40px 24px 100px}
+.header{text-align:center;padding:60px 0 40px;border-bottom:2px solid var(--text);margin-bottom:48px}
+.header .tag{display:inline-block;background:var(--text);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;margin-bottom:16px}
+.header h1{font-family:'Source Serif 4',serif;font-size:2.4em;font-weight:700;line-height:1.2;margin-bottom:12px}
+.header .subtitle{font-size:1.05em;color:#666;font-style:italic}
+.toc{background:white;border:1px solid var(--border);border-radius:8px;padding:24px 28px;margin-bottom:48px;box-shadow:var(--card-shadow)}
+.toc h2{font-size:.85em;text-transform:uppercase;letter-spacing:2px;color:#999;margin-bottom:12px;font-family:'JetBrains Mono',monospace}
+.toc ol{padding-left:20px;columns:2;column-gap:32px}
+.toc li{font-size:.92em;margin-bottom:4px;break-inside:avoid}
+.toc a{color:var(--accent);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.section{margin-bottom:56px}
+.section-num{font-family:'JetBrains Mono',monospace;font-size:.8em;color:var(--accent);letter-spacing:1px}
+h2.section-title{font-family:'Source Serif 4',serif;font-size:1.7em;font-weight:700;margin:4px 0 8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.slide-ref{font-family:'JetBrains Mono',monospace;font-size:.78em;color:#999;margin-bottom:16px;display:block}
+h3{font-size:1.15em;font-weight:700;margin:28px 0 10px;color:var(--text)}
+p{margin-bottom:14px}
+.callout{border-left:4px solid;padding:14px 18px;margin:18px 0;border-radius:0 6px 6px 0;font-size:.95em}
+.callout-key{border-color:var(--accent);background:var(--accent-light)}
+.callout-why{border-color:var(--green);background:var(--green-light)}
+.callout-warn{border-color:var(--red);background:var(--red-light)}
+.callout-tip{border-color:var(--orange);background:var(--orange-light)}
+.callout-insight{border-color:var(--purple);background:var(--purple-light)}
+.callout-label{font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
+.callout-key .callout-label{color:var(--accent)}
+.callout-why .callout-label{color:var(--green)}
+.callout-warn .callout-label{color:var(--red)}
+.callout-tip .callout-label{color:var(--orange)}
+.callout-insight .callout-label{color:var(--purple)}
+pre{background:var(--code-bg);color:#e2e8f0;padding:18px 20px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.84em;line-height:1.65;margin:16px 0}
+code{font-family:'JetBrains Mono',monospace;background:#f1f5f9;padding:2px 6px;border-radius:3px;font-size:.88em}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:#f8fafc;font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:.5px}
+.size{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--accent);font-weight:500}
+.diagram{background:white;border:1px solid var(--border);border-radius:8px;padding:24px;margin:20px 0;text-align:center;box-shadow:var(--card-shadow)}
+.diagram-caption{font-size:.85em;color:#666;margin-top:10px;font-style:italic}
+.versus{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.versus>div{background:white;border:1px solid var(--border);border-radius:8px;padding:16px;box-shadow:var(--card-shadow)}
+.versus h4{font-size:.95em;font-weight:700;margin-bottom:8px;text-align:center}
+.highlight{background:linear-gradient(transparent 60%,#fef08a 60%);padding:0 2px}
+.level-tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.7em;padding:2px 8px;border-radius:4px;margin-left:6px;letter-spacing:.5px;vertical-align:middle}
+.level-1{background:#dbeafe;color:#1e40af}
+.level-2{background:#d1fae5;color:#065f46}
+.level-3{background:#ede9fe;color:#5b21b6}
+.level-4{background:#fef3c7;color:#92400e}
+strong{font-weight:700}em{font-style:italic}
+.flow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.82em}
+.flow-box{padding:7px 12px;border-radius:6px;border:2px solid;font-weight:500}
+.flow-arrow{color:#999;font-size:1.2em}
+.fb-input{background:#fef2f2;border-color:#fca5a5}.fb-conv{background:#dbeafe;border-color:#93c5fd}.fb-act{background:#d1fae5;border-color:#6ee7b7}.fb-pool{background:#fef3c7;border-color:#fcd34d}.fb-norm{background:#ede9fe;border-color:#c4b5fd}.fb-fc{background:#f3f4f6;border-color:#9ca3af}
+@media(max-width:600px){.header h1{font-size:1.7em}.toc ol{columns:1}.container{padding:24px 16px 80px}.versus{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <div class="tag">EECS 498.008 / 598.008 &bull; TA 深度讲解</div>
+  <h1>Lecture 9: Hardware and Software</h1>
+  <div class="subtitle">Justin Johnson &mdash; 134 slides &mdash; 对应 WI2022 Lecture 12</div>
+</div>
+
+<nav class="toc">
+  <h2>目录 Contents</h2>
+  <ol>
+    <li><a href="#s1">CPU vs GPU：为什么深度学习需要 GPU？</a></li>
+    <li><a href="#s2">GPU 内部结构与 Tensor Core</a></li>
+    <li><a href="#s3">TPU 与 Cloud Computing</a></li>
+    <li><a href="#s4">PyTorch 三层抽象：Tensor → Autograd → Module</a></li>
+    <li><a href="#s5">Tensor：从 NumPy 到 GPU</a></li>
+    <li><a href="#s6">Autograd：自动微分的魔法</a></li>
+    <li><a href="#s7">nn.Module：模型搭建的标准范式</a></li>
+    <li><a href="#s8">完整训练循环：optim + DataLoader</a></li>
+    <li><a href="#s9">动态图 vs 静态图</a></li>
+    <li><a href="#s10">PyTorch vs TensorFlow &amp; 现代视角</a></li>
+  </ol>
+</nav>
+
+<!-- ====== SECTION 1 ====== -->
+<div class="section" id="s1">
+  <span class="section-num">PART 01</span>
+  <h2 class="section-title">CPU vs GPU：为什么深度学习需要 GPU？</h2>
+  <span class="slide-ref">对应 Slides 3–10</span>
+
+  <p>Justin 在 Slide 10 用了一张非常直观的对比表格。核心区别不在于哪个"更好"，而在于它们的<strong>设计哲学完全不同</strong>：</p>
+
+  <table>
+    <tr><th></th><th>CPU (Ryzen 9 3950X)</th><th>GPU (NVIDIA Titan RTX)</th></tr>
+    <tr><td>核心数</td><td>16 (32 threads)</td><td><strong>4608</strong></td></tr>
+    <tr><td>时钟频率</td><td>3.5 GHz (boost 4.7)</td><td>1.35 GHz (boost 1.77)</td></tr>
+    <tr><td>内存</td><td>System RAM（可扩展到数百 GB）</td><td>24 GB GDDR6（固定）</td></tr>
+    <tr><td>价格</td><td>$749</td><td>$2499</td></tr>
+    <tr><td>FP32 算力</td><td>~4.8 TFLOP/s</td><td><strong>~16.3 TFLOP/s</strong></td></tr>
+  </table>
+
+  <div class="callout callout-key">
+    <span class="callout-label">核心直觉</span>
+    <strong>CPU</strong> 像一小队精英特种兵——每个核心都很强、很灵活，擅长复杂的<strong>顺序任务</strong>（分支预测、缓存优化、乱序执行）。<br><br>
+    <strong>GPU</strong> 像一支万人大军——每个核心很"笨"（没有分支预测，没有复杂缓存），但有<strong>数千个</strong>同时工作，擅长<strong>大规模并行任务</strong>。<br><br>
+    深度学习的核心操作——矩阵乘法——恰好是最典型的并行任务：输出矩阵的每个元素可以独立计算。这就是为什么 GPU 在深度学习中如此重要。
+  </div>
+
+  <h3>为什么矩阵乘法天然适合 GPU？</h3>
+
+  <p>假设你要计算 C = A × B，其中 A 是 <span class="size">1000×1000</span>，B 是 <span class="size">1000×1000</span>。输出 C 有 100 万个元素，每个元素是一个 1000 维的点积。这 100 万个点积之间<strong>完全独立</strong>——它们不需要互相通信，不需要等待前一个完成。GPU 的 4608 个核心可以同时计算上千个点积，而 CPU 的 16 个核心只能同时处理 16 个。</p>
+
+  <p>在深度学习中，几乎所有核心操作都是矩阵运算：全连接层是矩阵乘法，卷积可以通过 im2col 转化为矩阵乘法，BatchNorm 是逐元素操作（也是并行的）。所以 GPU 在深度学习中通常比 CPU 快 <strong>10–100 倍</strong>。</p>
+</div>
+
+<!-- ====== SECTION 2 ====== -->
+<div class="section" id="s2">
+  <span class="section-num">PART 02</span>
+  <h2 class="section-title">GPU 内部结构与 Tensor Core</h2>
+  <span class="slide-ref">对应 Slides 11–20</span>
+
+  <p>Justin 在 Slide 20 展示了 RTX Titan 的内部结构。理解这些细节虽然不直接影响你写 PyTorch 代码，但能帮你理解<strong>为什么某些操作快、某些慢</strong>。</p>
+
+  <h3>GPU 的层级结构</h3>
+
+  <p>以 RTX Titan 为例，它包含 <strong>72 个 Streaming Multiprocessors (SM)</strong>。每个 SM 内部有 64 个 FP32 CUDA 核心和 8 个 Tensor Core。整体算力的计算：</p>
+
+  <p><strong>FP32 算力</strong>：72 SM × 64 cores × 2 FLOP/cycle × 1.77 GHz = <strong>16.3 TFLOP/s</strong></p>
+
+  <p><strong>Tensor Core 算力</strong>：72 SM × 8 Tensor Cores × 128 FLOP/cycle × 1.77 GHz = <strong>130 TFLOP/s</strong>（！）</p>
+
+  <div class="callout callout-why">
+    <span class="callout-label">Tensor Core 是什么？</span>
+    Tensor Core 是专门为<strong>矩阵乘加运算（Matrix Multiply-Accumulate）</strong>设计的硬件单元。它能在一个时钟周期内完成一个 4×4 矩阵的 D = A×B + C 运算（128 次浮点运算）。这比用 FP32 核心做同样的计算快约 <strong>8 倍</strong>。<br><br>
+    Tensor Core 通常使用<strong>混合精度</strong>：用 FP16（半精度）做乘法，用 FP32 做累加，既快又不损失太多精度。这就是为什么现代训练框架默认开启 Mixed Precision Training（AMP）。
+  </div>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">现代视角：2025 年的 GPU</span>
+    这份 slides 是 2019 年的数据。到 2025 年，NVIDIA H100 的 Tensor Core 算力已达 <strong>~990 TFLOP/s (FP16)</strong>，是 RTX Titan 的约 7.6 倍。但核心的设计理念不变：大量并行核心 + 专用矩阵运算单元。你在这门课中学到的关于 GPU 并行性的直觉，在 2025 年依然完全适用。
+  </div>
+
+  <h3>GPU 编程的瓶颈：内存带宽</h3>
+
+  <p>Justin 虽然没有用大量篇幅讲这个，但这是理解 GPU 性能的关键。GPU 的计算速度往往不是瓶颈，<strong>数据传输才是</strong>。数据需要经历两个层级的传输：</p>
+
+  <p><strong>CPU RAM ↔ GPU RAM</strong>（PCIe 总线）：带宽约 16 GB/s。这就是为什么你需要把数据"移动到 GPU"上（<code>tensor.cuda()</code>），并尽量减少 CPU-GPU 之间的数据往返。</p>
+
+  <p><strong>GPU RAM ↔ GPU 计算核心</strong>（内存带宽）：RTX Titan 约 672 GB/s。即使如此，如果你的操作是"内存密集型"（读写大量数据但计算很少，比如逐元素加法），GPU 也可能被内存带宽卡住。</p>
+</div>
+
+<!-- ====== SECTION 3 ====== -->
+<div class="section" id="s3">
+  <span class="section-num">PART 03</span>
+  <h2 class="section-title">TPU 与 Cloud Computing</h2>
+  <span class="slide-ref">对应 Slides 25–33</span>
+
+  <p>Google 的 <strong>Tensor Processing Unit (TPU)</strong> 是专门为深度学习设计的 ASIC（Application-Specific Integrated Circuit）。与 GPU 不同，TPU 不是通用计算芯片——它几乎只做一件事：<strong>大规模矩阵乘法</strong>。</p>
+
+  <p>Slide 30 一句话点出了 TPU 的限制：<em>"In order to use TPUs, you have to use TensorFlow."</em>（2019 年的情况，现在 JAX 也支持 TPU。）</p>
+
+  <div class="callout callout-tip">
+    <span class="callout-label">对你的实际影响</span>
+    作为学生，你在这门课中会使用 <strong>Google Colab</strong> 的免费 GPU（通常是 T4 或 V100）来完成 Assignments。Justin 的核心建议是：在 Colab 上开发和调试，需要大规模训练时再考虑云端 GPU（AWS/GCP）。对于 A1–A6 和 Mini-Project，Colab 的免费 GPU 已经足够。
+  </div>
+</div>
+
+<!-- ====== SECTION 4 ====== -->
+<div class="section" id="s4">
+  <span class="section-num">PART 04</span>
+  <h2 class="section-title">PyTorch 三层抽象：Tensor → Autograd → Module</h2>
+  <span class="slide-ref">对应 Slide 40</span>
+
+  <p>Slide 40 是整个软件部分的<strong>路线图</strong>——Justin 把 PyTorch 分成三个递进的抽象层次，并标注了它们对应的 Assignment：</p>
+
+  <div class="diagram">
+    <div class="flow" style="flex-direction:column;gap:12px;">
+      <span class="flow-box fb-input" style="width:85%"><strong>Level 1: Tensor</strong> — 类似 NumPy array，但可以在 GPU 上运行 <span class="level-tag level-1">A1, A2, A3</span></span>
+      <span class="flow-arrow">↓ 在此基础上加入自动微分</span>
+      <span class="flow-box fb-conv" style="width:85%"><strong>Level 2: Autograd</strong> — 自动构建计算图，自动计算梯度 <span class="level-tag level-2">A4, A5, A6</span></span>
+      <span class="flow-arrow">↓ 在此基础上加入模块化封装</span>
+      <span class="flow-box fb-act" style="width:85%"><strong>Level 3: nn.Module</strong> — 神经网络层的抽象，可存储权重和状态 <span class="level-tag level-3">A4, A5, A6</span></span>
+    </div>
+    <div class="diagram-caption">Slide 40: PyTorch 的三层递进抽象</div>
+  </div>
+
+  <div class="callout callout-key">
+    <span class="callout-label">为什么这个分层设计如此重要？</span>
+    这不仅是 PyTorch 的设计，更是你理解<strong>任何</strong>深度学习框架的思维模型。无论是 TensorFlow、JAX 还是未来的新框架，它们都遵循同样的三层结构：<strong>张量运算 → 自动微分 → 模型抽象</strong>。在你的 A1–A3 中，你手写了 forward 和 backward——那就是在 Level 1 上工作。A4 之后，你开始使用 Autograd 和 Module，让框架帮你做你之前手写的事情。
+  </div>
+</div>
+
+<!-- ====== SECTION 5 ====== -->
+<div class="section" id="s5">
+  <span class="section-num">PART 05</span>
+  <h2 class="section-title">Tensor：从 NumPy 到 GPU</h2>
+  <span class="slide-ref">对应 Slides 42–50</span>
+
+  <p>PyTorch 的 Tensor 和 NumPy 的 ndarray 几乎同构——API 非常相似，但有一个关键区别：<strong>Tensor 可以在 GPU 上运行</strong>。</p>
+
+  <h3>Slide 45 的完整代码解读</h3>
+
+  <p>Justin 在 Slide 45 展示了一个"原始"的两层网络训练循环——不用 autograd，手动计算梯度。这段代码虽然你在 A4+ 之后不会再这样写，但它是理解后续抽象层的基础：</p>
+
+<pre>import torch
+device = torch.device('cuda')  <span style="color:#64748b"># 指定在 GPU 上运算</span>
+
+N, D_in, H, D_out = 64, 1000, 100, 10
+x = torch.randn(N, D_in, device=device)   <span style="color:#64748b"># 直接在 GPU 上创建数据</span>
+y = torch.randn(N, D_out, device=device)
+w1 = torch.randn(D_in, H, device=device)
+w2 = torch.randn(H, D_out, device=device)
+
+learning_rate = 1e-6
+for t in range(500):
+    <span style="color:#64748b"># === 前向传播 ===</span>
+    h = x.mm(w1)              <span style="color:#64748b"># (N, D_in) × (D_in, H) → (N, H)</span>
+    h_relu = h.clamp(min=0)   <span style="color:#64748b"># ReLU</span>
+    y_pred = h_relu.mm(w2)    <span style="color:#64748b"># (N, H) × (H, D_out) → (N, D_out)</span>
+    loss = (y_pred - y).pow(2).sum()
+
+    <span style="color:#64748b"># === 手动反向传播 ===</span>
+    grad_y_pred = 2.0 * (y_pred - y)
+    grad_w2 = h_relu.t().mm(grad_y_pred)
+    grad_h_relu = grad_y_pred.mm(w2.t())
+    grad_h = grad_h_relu.clone()
+    grad_h[h &lt; 0] = 0                   <span style="color:#64748b"># ReLU 的反向传播</span>
+    grad_w1 = x.t().mm(grad_h)
+
+    <span style="color:#64748b"># === 梯度下降更新 ===</span>
+    w1 -= learning_rate * grad_w1
+    w2 -= learning_rate * grad_w2</pre>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">这里的手动 backward 你应该很熟悉了</span>
+    经过 A2（手写两层网络 backward）和 A3（模块化 backward），你已经能看懂这段代码的每一行。<code>grad_h[h &lt; 0] = 0</code> 就是 ReLU 的反向传播——正区间梯度通过，负区间梯度归零。这正是你在 A3 中 <code>relu_backward</code> 里写的逻辑。<br><br>
+    但手写 backward 在复杂网络中是不可行的——一个 ResNet-152 有几百个运算节点，手写梯度会出错且无法维护。这就引出了 Autograd。
+  </div>
+</div>
+
+<!-- ====== SECTION 6 ====== -->
+<div class="section" id="s6">
+  <span class="section-num">PART 06</span>
+  <h2 class="section-title">Autograd：自动微分的魔法</h2>
+  <span class="slide-ref">对应 Slides 55–65</span>
+
+  <p>Autograd 是 PyTorch 的核心引擎。Slide 55 展示了同样的两层网络，但<strong>不再手写 backward</strong>——只需要调用 <code>loss.backward()</code>，PyTorch 会自动帮你算出所有梯度。</p>
+
+<pre>import torch
+
+N, D_in, H, D_out = 64, 1000, 100, 10
+x = torch.randn(N, D_in)
+y = torch.randn(N, D_out)
+w1 = torch.randn(D_in, H, <span style="color:#c084fc">requires_grad=True</span>)  <span style="color:#64748b"># 告诉 PyTorch 追踪这个张量</span>
+w2 = torch.randn(H, D_out, <span style="color:#c084fc">requires_grad=True</span>)
+
+learning_rate = 1e-6
+for t in range(500):
+    <span style="color:#64748b"># 前向传播（与之前完全一样！）</span>
+    y_pred = x.mm(w1).clamp(min=0).mm(w2)
+    loss = (y_pred - y).pow(2).sum()
+
+    <span style="color:#c084fc">loss.backward()</span>  <span style="color:#64748b"># 一行代码搞定所有反向传播！</span>
+
+    with torch.no_grad():         <span style="color:#64748b"># 更新权重时不要追踪计算图</span>
+        w1 -= learning_rate * w1.grad
+        w2 -= learning_rate * w2.grad
+        w1.grad.zero_()           <span style="color:#64748b"># 清空梯度（否则会累积！）</span>
+        w2.grad.zero_()</pre>
+
+  <h3>Autograd 的工作原理</h3>
+
+  <p>当你对一个 <code>requires_grad=True</code> 的张量执行运算时，PyTorch 会在后台<strong>动态构建一个计算图</strong>。图中的每个节点记录了：(1) 执行了什么操作，(2) 输入是什么。当你调用 <code>loss.backward()</code> 时，PyTorch 从 loss 出发，沿着这个图反向遍历，用<strong>链式法则</strong>自动计算每个 <code>requires_grad=True</code> 张量的梯度，存储在 <code>.grad</code> 属性中。</p>
+
+  <div class="callout callout-key">
+    <span class="callout-label">三个关键机制（极易出 bug！）</span>
+    <p><strong>① <code>requires_grad=True</code></strong>：只有标记了这个属性的张量才会被追踪。输入数据 x 和标签 y 通常不需要梯度，只有权重需要。</p>
+    <p><strong>② <code>torch.no_grad()</code></strong>：更新权重时必须用这个上下文管理器包裹。否则 <code>w1 -= lr * w1.grad</code> 也会被当作计算图的一部分——你在"更新权重"的过程中又构建了新的计算图，导致内存泄漏和错误的梯度。</p>
+    <p><strong>③ <code>.grad.zero_()</code></strong>：PyTorch <strong>默认累积梯度</strong>（而非覆盖）。如果你不清零，第二次 <code>backward()</code> 的梯度会加到第一次的梯度上。这个设计是为了支持某些高级用法（如 gradient accumulation），但对初学者来说是一个非常常见的 bug 源。</p>
+  </div>
+
+  <h3>自定义 Autograd Function（Slide 65）</h3>
+
+  <p>如果你需要定义 PyTorch 不原生支持的操作（比如一个特殊的激活函数），你可以继承 <code>torch.autograd.Function</code>，手动定义 forward 和 backward：</p>
+
+<pre>class Sigmoid(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        y = 1.0 / (1.0 + (-x).exp())
+        ctx.save_for_backward(y)  <span style="color:#64748b"># 保存 y 用于 backward</span>
+        return y
+
+    @staticmethod
+    def backward(ctx, grad_y):
+        y, = ctx.saved_tensors
+        grad_x = grad_y * y * (1.0 - y)  <span style="color:#64748b"># sigmoid 的导数: y(1-y)</span>
+        return grad_x</pre>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">与 Assignment 3 的对应关系</span>
+    你在 A3 中手写的每个 <code>forward</code> / <code>backward</code> 函数对，其实就是在做和 <code>torch.autograd.Function</code> 完全一样的事情。A3 教你理解原理；从 A4 开始，你使用 PyTorch 的 autograd 来自动完成这些工作。但<strong>理解原理的人</strong>在调试复杂模型时，比只会调 API 的人有巨大优势——这就是你手写 backward 的回报。
+  </div>
+</div>
+
+<!-- ====== SECTION 7 ====== -->
+<div class="section" id="s7">
+  <span class="section-num">PART 07</span>
+  <h2 class="section-title">nn.Module：模型搭建的标准范式</h2>
+  <span class="slide-ref">对应 Slides 70–85</span>
+
+  <p>在 Level 2（Autograd）中，权重还是"裸"张量（<code>torch.randn(..., requires_grad=True)</code>）。当模型变复杂时，管理几十个、几百个这样的张量会非常混乱。<code>nn.Module</code> 提供了一种<strong>面向对象的封装</strong>：</p>
+
+  <h3>基本用法（Slide 75）</h3>
+
+<pre>import torch
+
+class TwoLayerNet(torch.nn.Module):
+    def __init__(self, D_in, H, D_out):
+        super(TwoLayerNet, self).__init__()
+        self.linear1 = torch.nn.Linear(D_in, H)    <span style="color:#64748b"># 权重自动创建、管理</span>
+        self.linear2 = torch.nn.Linear(H, D_out)
+
+    def forward(self, x):
+        h_relu = self.linear1(x).clamp(min=0)       <span style="color:#64748b"># 只定义前向传播！</span>
+        y_pred = self.linear2(h_relu)
+        return y_pred
+
+<span style="color:#64748b"># 使用</span>
+model = TwoLayerNet(D_in, H, D_out)
+optimizer = torch.optim.SGD(<span style="color:#c084fc">model.parameters()</span>, lr=1e-4)
+
+for t in range(500):
+    y_pred = model(x)
+    loss = torch.nn.functional.mse_loss(y_pred, y)
+
+    loss.backward()
+    optimizer.step()       <span style="color:#64748b"># 更新所有参数</span>
+    optimizer.zero_grad()  <span style="color:#64748b"># 清零所有梯度</span></pre>
+
+  <p>注意对比 Level 2 的代码——<strong>你不再需要手动管理 <code>w1</code>、<code>w2</code></strong>，不再需要 <code>torch.no_grad()</code> 包裹更新步骤（optimizer 内部处理了），不再需要对每个张量单独调用 <code>.grad.zero_()</code>。</p>
+
+  <div class="callout callout-key">
+    <span class="callout-label">nn.Module 的三大核心机制</span>
+    <p><strong>① <code>model.parameters()</code></strong>：自动收集模型中所有的可学习参数。当你把 <code>nn.Linear</code>、<code>nn.Conv2d</code> 等层作为 Module 的属性时，PyTorch 会自动"注册"它们的权重。</p>
+    <p><strong>② 只定义 <code>forward()</code></strong>：你只需要写前向传播的逻辑。反向传播由 autograd 自动处理。<strong>永远不要手动定义 <code>backward()</code></strong>。</p>
+    <p><strong>③ Module 可以嵌套 Module</strong>：你可以在一个 Module 的 <code>__init__</code> 中使用其他 Module 作为子组件。这是构建复杂网络（如 ResNet）的关键——每个 ResBlock 是一个 Module，整个 ResNet 是包含多个 ResBlock 的 Module。</p>
+  </div>
+
+  <h3>自定义 Module：ParallelBlock（Slide 80）</h3>
+
+  <p>Slide 80 展示了一个非顺序的自定义模块——两条并行的 Linear 路径，输出相乘后过 ReLU。这说明 <code>nn.Module</code> 不限于顺序结构，你可以用普通的 Python 代码实现<strong>任意的计算图拓扑</strong>：</p>
+
+<pre>class ParallelBlock(torch.nn.Module):
+    def __init__(self, D_in, D_out):
+        super(ParallelBlock, self).__init__()
+        self.linear1 = torch.nn.Linear(D_in, D_out)
+        self.linear2 = torch.nn.Linear(D_in, D_out)
+
+    def forward(self, x):
+        h1 = self.linear1(x)
+        h2 = self.linear2(x)
+        return (h1 * h2).clamp(min=0)  <span style="color:#64748b"># 两路并行，结果相乘，再 ReLU</span></pre>
+
+  <p>然后可以用 <code>nn.Sequential</code> 把多个自定义模块串联起来：</p>
+
+<pre>model = torch.nn.Sequential(
+    ParallelBlock(D_in, H),
+    ParallelBlock(H, H),
+    torch.nn.Linear(H, D_out)
+)</pre>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">这就是 ResNet 的搭建方式</span>
+    回忆 Lecture 8 的 ResNet——每个 Residual Block 就是一个自定义 Module（内部有 conv + BN + shortcut + add），然后用 Sequential 或 for 循环把多个 Block 串成完整网络。你在 A4+ 中会实际体验这种搭建方式。
+  </div>
+</div>
+
+<!-- ====== SECTION 8 ====== -->
+<div class="section" id="s8">
+  <span class="section-num">PART 08</span>
+  <h2 class="section-title">完整训练循环：optim + DataLoader</h2>
+  <span class="slide-ref">对应 Slides 75–85</span>
+
+  <p>把所有组件拼在一起，一个完整的 PyTorch 训练循环包含五个核心步骤。这是你从 A4 开始到未来所有项目中都会反复使用的模式：</p>
+
+<pre><span style="color:#64748b"># ============ 完整的 PyTorch 训练模板 ============</span>
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+
+<span style="color:#64748b"># 1. 准备数据</span>
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+
+<span style="color:#64748b"># 2. 定义模型</span>
+model = MyModel().cuda()
+
+<span style="color:#64748b"># 3. 定义优化器和损失函数</span>
+optimizer = optim.Adam(model.parameters(), lr=1e-3)
+criterion = nn.CrossEntropyLoss()
+
+<span style="color:#64748b"># 4. 训练循环</span>
+for epoch in range(num_epochs):
+    model.train()                          <span style="color:#64748b"># 启用 BN 和 Dropout</span>
+    for images, labels in train_loader:
+        images, labels = images.cuda(), labels.cuda()
+
+        logits = model(images)             <span style="color:#64748b"># ① 前向传播</span>
+        loss = criterion(logits, labels)   <span style="color:#64748b"># ② 计算损失</span>
+
+        optimizer.zero_grad()              <span style="color:#64748b"># ③ 清零梯度</span>
+        loss.backward()                    <span style="color:#64748b"># ④ 反向传播</span>
+        optimizer.step()                   <span style="color:#64748b"># ⑤ 更新参数</span>
+
+    <span style="color:#64748b"># 5. 验证</span>
+    model.eval()                           <span style="color:#64748b"># 关闭 BN 和 Dropout</span>
+    with torch.no_grad():
+        for images, labels in val_loader:
+            logits = model(images.cuda())
+            <span style="color:#64748b"># ... 计算验证指标</span></pre>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">五个最常犯的错误</span>
+    <p><strong>① 忘记 <code>optimizer.zero_grad()</code></strong> → 梯度累积，loss 不正常。</p>
+    <p><strong>② 忘记 <code>model.train()</code> / <code>model.eval()</code></strong> → BN 用错统计量，Dropout 在测试时仍激活。</p>
+    <p><strong>③ 忘记 <code>torch.no_grad()</code></strong> → 验证时仍构建计算图，浪费内存。</p>
+    <p><strong>④ 忘记 <code>.cuda()</code></strong> → 数据在 CPU、模型在 GPU，会报 device mismatch 错误。</p>
+    <p><strong>⑤ <code>zero_grad()</code> 的位置</strong> → 放在 <code>backward()</code> 之前或之后都可以，但要保持一致。推荐放在 <code>backward()</code> 之前（上面的写法）。</p>
+  </div>
+</div>
+
+<!-- ====== SECTION 9 ====== -->
+<div class="section" id="s9">
+  <span class="section-num">PART 09</span>
+  <h2 class="section-title">动态图 vs 静态图</h2>
+  <span class="slide-ref">对应 Slides 90–110</span>
+
+  <p>这是本讲的理论亮点。PyTorch 使用<strong>动态计算图（Dynamic Computation Graph）</strong>，TensorFlow 1.x 使用<strong>静态计算图（Static Computation Graph）</strong>。两种范式有根本性的区别：</p>
+
+  <div class="versus">
+    <div>
+      <h4 style="color:var(--green)">动态图（PyTorch）</h4>
+      <p><strong>每次前向传播</strong>都构建一个全新的计算图。<code>backward()</code> 执行完后图被销毁。</p>
+      <p>可以在 forward 中使用<strong>任意 Python 控制流</strong>（if/else, for 循环, while）。每次运行的图可以不同。</p>
+      <p>调试极其方便——直接用 <code>print()</code>、<code>pdb</code>、断点。</p>
+      <p>适合<strong>研究和原型开发</strong>。</p>
+    </div>
+    <div>
+      <h4 style="color:var(--accent)">静态图（TF 1.x / torch.jit）</h4>
+      <p>先<strong>定义整个计算图</strong>，然后反复执行。图结构固定，不能中途修改。</p>
+      <p>控制流需要用特殊的图操作（<code>tf.cond</code>, <code>tf.while_loop</code>）来表示，不能用普通 Python if/else。</p>
+      <p>调试困难——图在构建和执行之间有一道"墙"。</p>
+      <p>但可以做<strong>图优化</strong>（算子融合、内存优化），适合<strong>部署</strong>。</p>
+    </div>
+  </div>
+
+  <h3>动态图的核心优势（Slide 95）</h3>
+
+  <p>Slide 95 用一个简洁的例子说明了动态图的威力：</p>
+
+<pre>for t in range(500):
+    w2 = w2a <span style="color:#c084fc">if</span> prev_loss &lt; 5.0 <span style="color:#c084fc">else</span> w2b   <span style="color:#64748b"># 普通的 Python if!</span>
+    y_pred = x.mm(w1).clamp(min=0).mm(w2)
+    loss = (y_pred - y).pow(2).sum()
+    loss.backward()</pre>
+
+  <p>在动态图中，<code>if prev_loss &lt; 5.0</code> 是普通的 Python 代码。每次迭代，PyTorch 根据条件选择不同的 w2，构建不同的计算图，然后 backward 正确地计算对应图的梯度。在静态图中，这种"运行时决定网络结构"的能力需要用特殊的图操作来实现，代码会复杂得多。</p>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">Slide 110: 动态图的杀手级应用</span>
+    Justin 展示了几个<strong>网络结构取决于输入</strong>的场景，这在静态图中极其痛苦，但在动态图中自然而然：<br><br>
+    <strong>Recurrent Networks</strong>（RNN/LSTM）：序列长度因输入而异，计算图的展开深度每次都不同。<br>
+    <strong>Recursive Networks</strong>：树结构网络，图的拓扑取决于输入的语法树。<br>
+    <strong>Modular Networks</strong>：根据问题动态组合不同的子网络。<br><br>
+    这些正是 PyTorch 在学术界占据主导地位的原因——<strong>研究者需要快速实验各种非标准的网络结构</strong>，动态图让这变得和写普通 Python 一样简单。
+  </div>
+
+  <h3>PyTorch 的折中方案：torch.jit（Slide 100）</h3>
+
+  <p>PyTorch 也提供了 <code>torch.jit.script</code> 来获得静态图的好处。它会分析你的 Python 函数源码，编译成一个优化后的图对象。这在<strong>部署</strong>时很有用（模型可以脱离 Python 运行），但在研究阶段通常不需要。</p>
+</div>
+
+<!-- ====== SECTION 10 ====== -->
+<div class="section" id="s10">
+  <span class="section-num">PART 10</span>
+  <h2 class="section-title">PyTorch vs TensorFlow &amp; 现代视角</h2>
+  <span class="slide-ref">对应 Slides 115–134</span>
+
+  <p>Slides 115–120 展示了 TensorFlow 2.0 的写法（使用 <code>@tf.function</code> 和 <code>GradientTape</code>），它已经比 TF 1.x 更接近 PyTorch 的风格了。Slide 130 介绍了 TensorBoard——一个可以可视化 loss 曲线和权重分布的工具，PyTorch 也可以通过 <code>torch.utils.tensorboard</code> 使用。</p>
+
+  <div class="callout callout-tip">
+    <span class="callout-label">2025 年的现实</span>
+    这份 slides 是 2019 年的，深度学习生态已经发生了很大变化：<br><br>
+    <strong>PyTorch 已成为学术界和大部分工业界的默认选择。</strong>几乎所有顶级论文都使用 PyTorch。<br><br>
+    <strong>TensorFlow 仍然在部署端有优势</strong>（TF Serving、TF Lite、TF.js），但研究使用率大幅下降。<br><br>
+    <strong>JAX（Google）</strong>是一个新兴的替代方案，它结合了 NumPy 风格的 API + 函数式自动微分 + XLA 编译 + TPU 原生支持。很多 Google DeepMind 的项目在用 JAX。<br><br>
+    <strong>对你来说</strong>：这门课使用 PyTorch，这是正确的选择。掌握好 PyTorch 的三层抽象（Tensor → Autograd → Module），你可以轻松迁移到任何其他框架。
+  </div>
+
+  <h3>为什么这一讲在 vibe coding 时代尤其重要？</h3>
+
+  <p>在 AI 辅助编程越来越普遍的今天，<strong>框架层面的 API 调用是最容易被 AI 替代的</strong>——让 AI 帮你写一个训练循环、搭一个 ResNet，几秒钟就能完成。但是：</p>
+
+  <p>当训练出现 <code>RuntimeError: CUDA out of memory</code> 时，你需要理解 GPU 内存模型（Part 1-2 的知识）。当梯度变成 NaN 时，你需要理解 autograd 的计算图和梯度流（Part 6 的知识）。当模型在训练集上表现好但验证集上不行时，你需要知道 <code>model.train()</code> vs <code>model.eval()</code> 的区别（Part 8 的知识）。</p>
+
+  <p><strong>这些"为什么"层面的理解，才是你的真正竞争力。</strong></p>
+</div>
+
+<!-- ====== CHECKLIST ====== -->
+<div class="section" style="margin-top:64px;padding-top:32px;border-top:2px solid var(--text);">
+  <h2 class="section-title">核心检查清单 ✓</h2>
+
+  <table>
+    <tr><th>#</th><th>检查项</th><th>对应 Slide</th></tr>
+    <tr><td>1</td><td>CPU 和 GPU 的根本设计差异是什么？为什么矩阵乘法适合 GPU？</td><td>10</td></tr>
+    <tr><td>2</td><td>Tensor Core 是什么？为什么它比普通 CUDA 核心快？</td><td>20</td></tr>
+    <tr><td>3</td><td>PyTorch 的三层抽象（Tensor / Autograd / Module）各自的职责？</td><td>40</td></tr>
+    <tr><td>4</td><td><code>requires_grad=True</code> 的作用是什么？</td><td>55</td></tr>
+    <tr><td>5</td><td>为什么更新权重时需要 <code>torch.no_grad()</code>？</td><td>55</td></tr>
+    <tr><td>6</td><td>为什么需要 <code>.grad.zero_()</code>？如果不清零会发生什么？</td><td>55</td></tr>
+    <tr><td>7</td><td>如何自定义一个 autograd Function？forward 和 backward 各需要什么？</td><td>65</td></tr>
+    <tr><td>8</td><td><code>nn.Module</code> 的 <code>parameters()</code> 如何自动收集权重？</td><td>75</td></tr>
+    <tr><td>9</td><td><code>model.train()</code> 和 <code>model.eval()</code> 影响哪些层？</td><td>75</td></tr>
+    <tr><td>10</td><td>动态图和静态图的根本区别？各自的优缺点？</td><td>90–100</td></tr>
+    <tr><td>11</td><td>为什么动态图对 RNN、Recursive Network 等更友好？</td><td>110</td></tr>
+    <tr><td>12</td><td>完整训练循环的五个步骤是什么？最常犯的五个错误？</td><td>75, 85</td></tr>
+  </table>
+
+  <div class="callout callout-tip" style="margin-top:24px;">
+    <span class="callout-label">下一步</span>
+    这一讲是<strong>从手写 backward 到使用框架</strong>的关键转折点。建议你在完成 A3 的手写 backward 后，立即对照这一讲的 PyTorch 代码，体会框架如何自动化了你手写的每一步。然后进入 <strong>Lecture 10-11: Training Neural Networks</strong>，学习激活函数、初始化、正则化和超参数调优。有任何问题随时来问我！
+  </div>
+</div>
+
+</div>
+</body>
+</html>

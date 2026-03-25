@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lecture 8: CNN Architectures — 深度讲解</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf9f6;--text:#1a1a2e;--accent:#2563eb;--accent-light:#dbeafe;--green:#059669;--green-light:#d1fae5;--red:#dc2626;--red-light:#fee2e2;--orange:#d97706;--orange-light:#fef3c7;--purple:#7c3aed;--purple-light:#ede9fe;--border:#e5e7eb;--code-bg:#1e293b;--card-shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans SC','Source Serif 4',serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:16px}
+.container{max-width:820px;margin:0 auto;padding:40px 24px 100px}
+.header{text-align:center;padding:60px 0 40px;border-bottom:2px solid var(--text);margin-bottom:48px}
+.header .tag{display:inline-block;background:var(--text);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;margin-bottom:16px}
+.header h1{font-family:'Source Serif 4',serif;font-size:2.4em;font-weight:700;line-height:1.2;margin-bottom:12px}
+.header .subtitle{font-size:1.05em;color:#666;font-style:italic}
+.toc{background:white;border:1px solid var(--border);border-radius:8px;padding:24px 28px;margin-bottom:48px;box-shadow:var(--card-shadow)}
+.toc h2{font-size:.85em;text-transform:uppercase;letter-spacing:2px;color:#999;margin-bottom:12px;font-family:'JetBrains Mono',monospace}
+.toc ol{padding-left:20px;columns:2;column-gap:32px}
+.toc li{font-size:.92em;margin-bottom:4px;break-inside:avoid}
+.toc a{color:var(--accent);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.section{margin-bottom:56px}
+.section-num{font-family:'JetBrains Mono',monospace;font-size:.8em;color:var(--accent);letter-spacing:1px}
+h2.section-title{font-family:'Source Serif 4',serif;font-size:1.7em;font-weight:700;margin:4px 0 8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.slide-ref{font-family:'JetBrains Mono',monospace;font-size:.78em;color:#999;margin-bottom:16px;display:block}
+h3{font-size:1.15em;font-weight:700;margin:28px 0 10px;color:var(--text)}
+p{margin-bottom:14px}
+.callout{border-left:4px solid;padding:14px 18px;margin:18px 0;border-radius:0 6px 6px 0;font-size:.95em}
+.callout-key{border-color:var(--accent);background:var(--accent-light)}
+.callout-why{border-color:var(--green);background:var(--green-light)}
+.callout-warn{border-color:var(--red);background:var(--red-light)}
+.callout-tip{border-color:var(--orange);background:var(--orange-light)}
+.callout-insight{border-color:var(--purple);background:var(--purple-light)}
+.callout-label{font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
+.callout-key .callout-label{color:var(--accent)}
+.callout-why .callout-label{color:var(--green)}
+.callout-warn .callout-label{color:var(--red)}
+.callout-tip .callout-label{color:var(--orange)}
+.callout-insight .callout-label{color:var(--purple)}
+.math-block{background:white;border:1px solid var(--border);border-radius:6px;padding:16px 20px;margin:16px 0;text-align:center;font-family:'Source Serif 4',serif;font-size:1.1em;overflow-x:auto;box-shadow:var(--card-shadow)}
+.math-inline{font-family:'Source Serif 4',serif;font-style:italic;background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:.95em}
+pre{background:var(--code-bg);color:#e2e8f0;padding:18px 20px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.85em;line-height:1.6;margin:16px 0}
+code{font-family:'JetBrains Mono',monospace;background:#f1f5f9;padding:2px 6px;border-radius:3px;font-size:.88em}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:#f8fafc;font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:.5px}
+.size{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--accent);font-weight:500}
+.diagram{background:white;border:1px solid var(--border);border-radius:8px;padding:24px;margin:20px 0;text-align:center;box-shadow:var(--card-shadow)}
+.diagram-caption{font-size:.85em;color:#666;margin-top:10px;font-style:italic}
+.flow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.82em}
+.flow-box{padding:7px 12px;border-radius:6px;border:2px solid;font-weight:500}
+.flow-arrow{color:#999;font-size:1.2em}
+.fb-input{background:#fef2f2;border-color:#fca5a5}
+.fb-conv{background:#dbeafe;border-color:#93c5fd}
+.fb-act{background:#d1fae5;border-color:#6ee7b7}
+.fb-pool{background:#fef3c7;border-color:#fcd34d}
+.fb-norm{background:#ede9fe;border-color:#c4b5fd}
+.fb-fc{background:#f3f4f6;border-color:#9ca3af}
+.fb-add{background:#fce7f3;border-color:#f9a8d4}
+strong{font-weight:700}
+em{font-style:italic}
+.highlight{background:linear-gradient(transparent 60%,#fef08a 60%);padding:0 2px}
+.timeline{position:relative;padding-left:28px;margin:20px 0}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--border)}
+.timeline-item{position:relative;margin-bottom:20px}
+.timeline-item::before{content:'';position:absolute;left:-24px;top:8px;width:12px;height:12px;border-radius:50%;border:2px solid var(--accent);background:white}
+.timeline-item.active::before{background:var(--accent)}
+.timeline-year{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--accent);font-weight:500}
+.timeline-name{font-weight:700;font-size:1.05em}
+.timeline-detail{font-size:.9em;color:#555}
+.arch-card{background:white;border:1px solid var(--border);border-radius:8px;padding:20px;margin:16px 0;box-shadow:var(--card-shadow)}
+.arch-card h4{font-size:1.1em;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.arch-badge{font-family:'JetBrains Mono',monospace;font-size:.7em;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:1px}
+.badge-year{background:#dbeafe;color:#1e40af}
+.badge-layers{background:#d1fae5;color:#065f46}
+.badge-error{background:#fef3c7;color:#92400e}
+.versus{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.versus > div{background:white;border:1px solid var(--border);border-radius:8px;padding:16px;box-shadow:var(--card-shadow)}
+.versus h4{font-size:.95em;font-weight:700;margin-bottom:8px;text-align:center}
+@media(max-width:600px){.header h1{font-size:1.7em}.toc ol{columns:1}.container{padding:24px 16px 80px}.versus{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <div class="tag">EECS 498.008 / 598.008 &bull; TA 深度讲解</div>
+  <h1>Lecture 8: CNN Architectures I</h1>
+  <div class="subtitle">Justin Johnson &mdash; February 2, 2022 &mdash; 109 slides</div>
+</div>
+
+<nav class="toc">
+  <h2>目录 Contents</h2>
+  <ol>
+    <li><a href="#s1">ImageNet 竞赛与 CNN 发展史</a></li>
+    <li><a href="#s2">AlexNet：深度学习的 Big Bang</a></li>
+    <li><a href="#s3">VGGNet：简洁之美</a></li>
+    <li><a href="#s4">GoogLeNet：效率至上</a></li>
+    <li><a href="#s5">ResNet：最重要的架构创新</a></li>
+    <li><a href="#s6">复杂度全面对比</a></li>
+    <li><a href="#s7">设计规律与现代视角</a></li>
+    <li><a href="#s8">核心检查清单</a></li>
+  </ol>
+</nav>
+
+<!-- ===================== SECTION 1 ===================== -->
+<div class="section" id="s1">
+  <span class="section-num">PART 01</span>
+  <h2 class="section-title">ImageNet 竞赛与 CNN 发展史</h2>
+  <span class="slide-ref">对应 Slides 25–27, 55, 65–66, 75, 108</span>
+
+  <p>要理解 CNN 架构为什么是今天这个样子，你必须先理解推动它们演化的竞赛：<strong>ImageNet Large Scale Visual Recognition Challenge (ILSVRC)</strong>。这个竞赛要求模型在 1000 个类别、约 120 万张训练图像上进行图像分类，评价指标是 <strong>top-5 错误率</strong>（即正确标签是否在模型预测概率最高的 5 个类别中）。</p>
+
+  <p>Justin 在 Lecture 8 中用了一张贯穿始终的柱状图（Slides 25, 55, 65, 66, 75, 108），每讲完一个架构就在图上添加一根新的柱子。这张图本身就是整个深度学习发展史的缩影：</p>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-year">2010–2011</div>
+      <div class="timeline-name">浅层方法（Shallow）</div>
+      <div class="timeline-detail">Top-5 error: 28.2% → 25.8%。手工特征 + SVM，没有深度学习。</div>
+    </div>
+    <div class="timeline-item active">
+      <div class="timeline-year">2012</div>
+      <div class="timeline-name">AlexNet — 8 层</div>
+      <div class="timeline-detail">Top-5 error: <strong>16.4%</strong>。第一个深度学习方法，错误率暴降约 10 个百分点。深度学习时代的开端。</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2013</div>
+      <div class="timeline-name">ZFNet — 8 层</div>
+      <div class="timeline-detail">Top-5 error: 11.7%。本质上是调参后的 AlexNet（改了滤波器大小和步幅），Justin 在课上跳过了它。</div>
+    </div>
+    <div class="timeline-item active">
+      <div class="timeline-year">2014</div>
+      <div class="timeline-name">VGGNet — 19 层 &nbsp;|&nbsp; GoogLeNet — 22 层</div>
+      <div class="timeline-detail">Top-5 error: 7.3%（VGG）/ <strong>6.7%</strong>（GoogLeNet）。首次突破 10%，"深度"开始成为关键词。</div>
+    </div>
+    <div class="timeline-item active">
+      <div class="timeline-year">2015</div>
+      <div class="timeline-name">ResNet — 152 层</div>
+      <div class="timeline-detail">Top-5 error: <strong>3.6%</strong>，首次超越人类水平（~5.1%）。残差连接使超深网络成为可能。</div>
+    </div>
+  </div>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">宏观趋势</span>
+    从 2012 到 2015，仅仅三年时间，网络层数从 8 增长到 152，错误率从 16.4% 降到 3.6%。每一次突破都伴随着一个<strong>关键的架构创新</strong>——而不仅仅是"把网络做大"。理解<em>为什么</em>这些创新有效，比记住架构本身更重要。
+  </div>
+</div>
+
+<!-- ===================== SECTION 2 ===================== -->
+<div class="section" id="s2">
+  <span class="section-num">PART 02</span>
+  <h2 class="section-title">AlexNet (2012)：深度学习的 Big Bang</h2>
+  <span class="slide-ref">对应 Slides 28–55</span>
+
+  <p>这是 Justin 在 Lecture 8 中花了最多篇幅（近 30 张 slides！）的架构。他不是简单介绍结构，而是逐层带你计算 memory、params、FLOPs——<strong>这种分析能力本身就是这门课想教会你的核心技能。</strong></p>
+
+  <h3>架构总览</h3>
+
+  <p>AlexNet 由 Krizhevsky、Sutskever、Hinton 在 2012 年提出。输入是 <span class="size">3×227×227</span> 的图像（注意不是 224），架构如下：</p>
+
+  <table>
+    <tr><th>Layer</th><th>C<sub>in</sub></th><th>H/W</th><th>Filters</th><th>K</th><th>Stride</th><th>Pad</th><th>C<sub>out</sub></th><th>H'/W'</th><th>Memory(KB)</th><th>Params(K)</th><th>FLOPs(M)</th></tr>
+    <tr><td><strong>conv1</strong></td><td>3</td><td>227</td><td>64</td><td>11</td><td>4</td><td>2</td><td>64</td><td>56</td><td>784</td><td>23</td><td>73</td></tr>
+    <tr><td>pool1</td><td>64</td><td>56</td><td>—</td><td>3</td><td>2</td><td>0</td><td>64</td><td>27</td><td>182</td><td>0</td><td>0</td></tr>
+    <tr><td><strong>conv2</strong></td><td>64</td><td>27</td><td>192</td><td>5</td><td>1</td><td>2</td><td>192</td><td>27</td><td>547</td><td>307</td><td>224</td></tr>
+    <tr><td>pool2</td><td>192</td><td>27</td><td>—</td><td>3</td><td>2</td><td>0</td><td>192</td><td>13</td><td>127</td><td>0</td><td>0</td></tr>
+    <tr><td><strong>conv3</strong></td><td>192</td><td>13</td><td>384</td><td>3</td><td>1</td><td>1</td><td>384</td><td>13</td><td>254</td><td>664</td><td>112</td></tr>
+    <tr><td><strong>conv4</strong></td><td>384</td><td>13</td><td>256</td><td>3</td><td>1</td><td>1</td><td>256</td><td>13</td><td>169</td><td>885</td><td>145</td></tr>
+    <tr><td><strong>conv5</strong></td><td>256</td><td>13</td><td>256</td><td>3</td><td>1</td><td>1</td><td>256</td><td>13</td><td>169</td><td>590</td><td>100</td></tr>
+    <tr><td>pool5</td><td>256</td><td>13</td><td>—</td><td>3</td><td>2</td><td>0</td><td>256</td><td>6</td><td>36</td><td>0</td><td>0</td></tr>
+    <tr><td>flatten</td><td>256</td><td>6</td><td colspan="4">—</td><td colspan="2">9216</td><td>36</td><td>0</td><td>0</td></tr>
+    <tr><td><strong>fc6</strong></td><td colspan="2">9216</td><td>4096</td><td colspan="3">—</td><td colspan="2">4096</td><td>16</td><td><strong>37,726</strong></td><td>38</td></tr>
+    <tr><td><strong>fc7</strong></td><td colspan="2">4096</td><td>4096</td><td colspan="3">—</td><td colspan="2">4096</td><td>16</td><td><strong>16,781</strong></td><td>17</td></tr>
+    <tr><td><strong>fc8</strong></td><td colspan="2">4096</td><td>1000</td><td colspan="3">—</td><td colspan="2">1000</td><td>4</td><td><strong>4,097</strong></td><td>4</td></tr>
+  </table>
+
+  <p><strong>Total: 61M params, 0.7 GFLOP</strong></p>
+
+  <h3>逐层计算训练（最重要的技能！）</h3>
+
+  <p>Justin 在 Slides 36–46 花了整整 10 张 slides 一步步填充这个表格。让我以 conv1 为例，教你这个计算方法（Slide 36 的练习题）：</p>
+
+  <div class="callout callout-key">
+    <span class="callout-label">conv1 完整计算演示</span>
+    <p><strong>已知</strong>：Input <span class="size">3×227×227</span>，64 个 11×11 filters，stride=4，pad=2</p>
+    <p><strong>输出尺寸</strong>：H' = (227 − 11 + 2×2) / 4 + 1 = 220/4 + 1 = <strong>56</strong><br>
+    → Output: <span class="size">64×56×56</span></p>
+    <p><strong>Memory（存储激活值）</strong>：64 × 56 × 56 × 4 bytes = 802,816 bytes ≈ <strong>784 KB</strong><br>
+    （每个浮点数 4 bytes，需要存储激活值用于反向传播）</p>
+    <p><strong>Parameters</strong>：64 × 3 × 11 × 11 + 64(bias) = <strong>23,296</strong> ≈ 23K</p>
+    <p><strong>FLOPs</strong>：64 × 3 × 11 × 11 × 56 × 56 = <strong>72,855,552</strong> ≈ 73M<br>
+    （每个输出位置做一次 C<sub>in</sub>×K×K 的点积，共 C<sub>out</sub>×H'×W' 个位置）</p>
+  </div>
+
+  <div class="callout callout-tip">
+    <span class="callout-label">练习建议</span>
+    在看 Slide 36 之后的每一张 slide 之前，先自己算出那一层的数值，然后翻页验证。当你能对着一个任意的 conv/pool/fc 层秒算 output size、memory、params、FLOPs 时，这个技能就内化了。这在面试中和论文阅读中都极其有用。
+  </div>
+
+  <h3>三个关键发现（Slide 50）</h3>
+
+  <p>Slide 50 是 AlexNet 部分的<strong>灵魂</strong>——Justin 画了三张柱状图，揭示了一个极其重要的分布规律：</p>
+
+  <div class="versus">
+    <div>
+      <h4 style="color:var(--accent)">Memory 分布</h4>
+      <p>绝大部分内存消耗在<strong>前几层卷积</strong>（conv1 占 784KB，而 fc8 只占 4KB）。原因：前面的层空间分辨率大（56×56），虽然通道数少，但 H×W 很大。</p>
+    </div>
+    <div>
+      <h4 style="color:var(--red)">Params 分布</h4>
+      <p>绝大部分参数在<strong>全连接层</strong>（fc6 占 37.7M，而所有 conv 层加起来才 2.5M）。原因：fc6 的输入是 9216 维、输出是 4096 维，参数量 = 9216×4096 ≈ 37.7M。</p>
+    </div>
+  </div>
+
+  <div class="versus">
+    <div style="grid-column: 1 / -1;">
+      <h4 style="color:var(--green)">FLOPs 分布</h4>
+      <p>绝大部分计算量在<strong>卷积层</strong>（conv2 占 224M FLOPs，fc6 只占 38M）。原因：卷积的 FLOPs = C<sub>out</sub>×C<sub>in</sub>×K²×H'×W'，空间尺寸 H'×W' 是乘数。</p>
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">这个分布规律至关重要</span>
+    <strong>Memory：前面（大 H×W）</strong> &nbsp;|&nbsp; <strong>Params：FC 层</strong> &nbsp;|&nbsp; <strong>FLOPs：卷积层</strong><br><br>
+    这个规律不仅适用于 AlexNet，它是<strong>所有 CNN 的普遍规律</strong>。后续架构的每一次创新，都可以理解为在这三个维度上的优化：VGG 牺牲了 params 和 FLOPs 换取深度；GoogLeNet 通过 1×1 卷积和 GAP 同时压缩了三者；ResNet 用残差连接解锁了深度的上限。
+  </div>
+
+  <h3>AlexNet 的历史创新</h3>
+
+  <p>虽然从今天的视角看，AlexNet 的设计有些"原始"（11×11 大卷积核、不规则的通道数），但它在 2012 年引入了多项开创性技术：</p>
+
+  <p><strong>ReLU 激活函数</strong>——首次在大规模网络中使用，替代了 Sigmoid/Tanh，训练速度快 6 倍。<strong>Dropout 正则化</strong>——在 fc6 和 fc7 中使用 p=0.5 的 Dropout，有效防止过拟合。<strong>数据增强</strong>——随机裁剪、水平翻转、颜色抖动，扩大了有效训练集。<strong>GPU 训练</strong>——在两块 GTX 580（各 3GB 显存）上并行训练，Slide 28 的原始论文插图清楚展示了两个 GPU 的分工。</p>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">为什么 AlexNet 用 11×11 大卷积核？</span>
+    这不是因为 11×11 是最优选择，而是受限于当时的计算能力。第一层用大 kernel + 大 stride (4) 的目的是<strong>快速下采样</strong>，把 227×227 降到 56×56，否则后续层的计算量会爆炸。后来 VGG 证明了用多层 3×3 小卷积替代大卷积核是更好的设计，但这需要更多的计算力——2012 年的 GPU 做不到。
+  </div>
+</div>
+
+<!-- ===================== SECTION 3 ===================== -->
+<div class="section" id="s3">
+  <span class="section-num">PART 03</span>
+  <h2 class="section-title">VGGNet (2014)：简洁之美</h2>
+  <span class="slide-ref">对应 Slides 57–65</span>
+
+  <p>VGGNet 由 Oxford 的 Simonyan 和 Zisserman 提出。如果说 AlexNet 是一个充满手工调参痕迹的"草创之作"，VGG 则是第一个遵循<strong>系统性设计原则</strong>的架构。</p>
+
+  <h3>三条黄金设计规则（Slide 57, 62）</h3>
+
+  <div class="arch-card">
+    <h4>VGG Design Rules</h4>
+    <p><strong>规则 1</strong>：所有卷积层都使用 <strong>3×3, stride 1, pad 1</strong>（保持空间尺寸不变）。</p>
+    <p><strong>规则 2</strong>：所有 max pooling 都使用 <strong>2×2, stride 2</strong>（空间尺寸减半）。</p>
+    <p><strong>规则 3</strong>：每次 pool 后，通道数翻倍（64 → 128 → 256 → 512）。</p>
+  </div>
+
+  <p>这三条规则定义了<strong>至今仍被广泛使用的 CNN 设计范式</strong>。Slide 62 进一步量化了 pool 前后的变化：</p>
+
+  <div class="versus">
+    <div>
+      <h4>Pool 之前</h4>
+      <p>Input: <span class="size">C × 2H × 2W</span><br>
+      一层 3×3 Conv(C→C) 的：<br>
+      Memory: 4HWC<br>
+      Params: 9C²<br>
+      FLOPs: 36HWC²</p>
+    </div>
+    <div>
+      <h4>Pool 之后（C 翻倍）</h4>
+      <p>Input: <span class="size">2C × H × W</span><br>
+      一层 3×3 Conv(2C→2C) 的：<br>
+      Memory: 2HWC（减半）<br>
+      Params: 36C²（4倍）<br>
+      FLOPs: 36HWC²（不变！）</p>
+    </div>
+  </div>
+
+  <div class="callout callout-why">
+    <span class="callout-label">为什么通道数翻倍的设计很聪明？</span>
+    pool 让 H、W 各减半，面积减为 1/4。如果通道数不变，每层的计算量会急剧下降，网络后半段几乎不做任何有意义的计算。通道翻倍（C→2C）使 FLOPs 大致恒定，<strong>让每一层都承担相近的计算负担</strong>——这是一种朴素但有效的"负载均衡"。
+  </div>
+
+  <h3>VGG-16 / VGG-19 的 5 stage 结构</h3>
+
+  <p>Slide 57 给出了完整的层级对比（从底部 Input 向上读）：</p>
+
+  <table>
+    <tr><th>Stage</th><th>VGG-16</th><th>VGG-19</th><th>输出尺寸</th></tr>
+    <tr><td>Input</td><td colspan="2">3×224×224</td><td><span class="size">3×224×224</span></td></tr>
+    <tr><td>Stage 1</td><td>conv-conv-pool</td><td>conv-conv-pool</td><td><span class="size">64×112×112</span></td></tr>
+    <tr><td>Stage 2</td><td>conv-conv-pool</td><td>conv-conv-pool</td><td><span class="size">128×56×56</span></td></tr>
+    <tr><td>Stage 3</td><td>conv-conv-conv-pool</td><td>conv-conv-conv-conv-pool</td><td><span class="size">256×28×28</span></td></tr>
+    <tr><td>Stage 4</td><td>conv-conv-conv-pool</td><td>conv-conv-conv-conv-pool</td><td><span class="size">512×14×14</span></td></tr>
+    <tr><td>Stage 5</td><td>conv-conv-conv-pool</td><td>conv-conv-conv-conv-pool</td><td><span class="size">512×7×7</span></td></tr>
+    <tr><td>Head</td><td colspan="2">FC 4096 → FC 4096 → FC 1000</td><td><span class="size">1000</span></td></tr>
+  </table>
+
+  <p><strong>VGG-16 Total: 138M params, 13.6 GFLOP</strong>（对比 AlexNet: 61M params, 0.7 GFLOP）</p>
+
+  <h3>VGG 的贡献与局限</h3>
+
+  <div class="callout callout-tip">
+    <span class="callout-label">VGG 的核心贡献</span>
+    <strong>证明了"深度"的价值</strong>——在相同的设计框架下，从 16 层加到 19 层能持续提升性能（7.3% → 略低）。<br><br>
+    <strong>确立了 3×3 卷积 + 5 stage 的标准范式</strong>——后来的 ResNet 直接继承了这个 5 stage 框架。<br><br>
+    <strong>VGG 特征的强迁移性</strong>——VGG 的预训练特征在目标检测、分割等下游任务上表现极好，是很长一段时间内的"默认 backbone"。
+  </div>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">VGG 的严重问题</span>
+    <strong>138M 参数</strong>，其中绝大部分在三个 FC 层中（FC 4096 占了约 120M）。<strong>13.6 GFLOP</strong>，计算量是 AlexNet 的 19.4 倍。这使得 VGG 在部署和训练时都非常昂贵。后来的 GoogLeNet 和 ResNet 都在试图解决这个效率问题。
+  </div>
+</div>
+
+<!-- ===================== SECTION 4 ===================== -->
+<div class="section" id="s4">
+  <span class="section-num">PART 04</span>
+  <h2 class="section-title">GoogLeNet / Inception (2014)：效率至上</h2>
+  <span class="slide-ref">对应 Slides 66–75</span>
+
+  <p>GoogLeNet（也叫 Inception v1）由 Google 的 Szegedy 等人提出。它的设计哲学与 VGG 截然不同——<strong>不追求简洁，追求效率</strong>。Justin 在 Slide 67 精炼地总结为：<em>"Many innovations for efficiency: reduce parameter count, memory usage, and computation."</em></p>
+
+  <h3>核心创新 1：Inception Module</h3>
+
+  <p>Inception Module 的设计动机是：<strong>我们不知道每一层应该用多大的卷积核（3×3？5×5？还是只做池化？），那就全部都用，让网络自己学习最优的组合</strong>。</p>
+
+  <p>在一个 Inception Module 内部，同一个输入被并行送入四条路径，输出在通道维度上拼接（concatenate）：</p>
+
+  <div class="diagram">
+    <div style="display:flex;justify-content:center;gap:4px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:.8em;">
+      <div style="text-align:center">
+        <div class="flow-box fb-conv" style="margin-bottom:4px">1×1 conv</div>
+      </div>
+      <div style="text-align:center">
+        <div class="flow-box fb-conv" style="margin-bottom:4px">3×3 conv</div>
+        <div class="flow-box fb-norm" style="margin-bottom:4px">1×1 conv</div>
+      </div>
+      <div style="text-align:center">
+        <div class="flow-box fb-conv" style="margin-bottom:4px">5×5 conv</div>
+        <div class="flow-box fb-norm" style="margin-bottom:4px">1×1 conv</div>
+      </div>
+      <div style="text-align:center">
+        <div class="flow-box fb-conv" style="margin-bottom:4px">1×1 conv</div>
+        <div class="flow-box fb-pool" style="margin-bottom:4px">3×3 pool</div>
+      </div>
+    </div>
+    <div style="margin-top:8px;">↑ ↑ ↑ ↑</div>
+    <div class="flow-box fb-input" style="display:inline-block;margin-top:4px">Previous layer</div>
+    <br><br>
+    <div>四条路径的输出在 channel 维度上 concatenate → 送入下一个 Inception Module</div>
+    <div class="diagram-caption">Inception Module with 1×1 bottleneck（关键：每条有 3×3 或 5×5 的路径前都加一个 1×1 卷积降维）</div>
+  </div>
+
+  <div class="callout callout-key">
+    <span class="callout-label">1×1 卷积的 "瓶颈" 作用</span>
+    如果不加 1×1 瓶颈，直接对高通道数的输入做 5×5 卷积，计算量会爆炸。以输入 <span class="size">192×28×28</span> 为例：<br><br>
+    <strong>无瓶颈</strong>：直接用 32 个 5×5 conv → FLOPs = 192×5×5×32×28×28 ≈ <strong>120M</strong><br>
+    <strong>有瓶颈</strong>：先用 16 个 1×1 conv 降到 16 通道，再用 32 个 5×5 conv → FLOPs ≈ <strong>12.4M</strong><br><br>
+    减少了约 <strong>10 倍</strong> 计算量！1×1 卷积充当了"降维通道"——先把 192 维特征压缩到 16 维，再做空间卷积。
+  </div>
+
+  <h3>核心创新 2：Aggressive Stem（Slide 68, 70）</h3>
+
+  <p>GoogLeNet 在网络开头使用了"激进的 stem 网络"来快速下采样：从 224×224 经过 conv(7×7, stride 2) + pool + conv(1×1) + conv(3×3) + pool，迅速降到 192×28×28。</p>
+
+  <p>Slide 70 的对比数据触目惊心——仅 stem 部分（从 224 到 28 的分辨率）：</p>
+
+  <table>
+    <tr><th></th><th>GoogLeNet Stem</th><th>VGG-16 同等范围</th></tr>
+    <tr><td>Memory</td><td>7.5 MB</td><td>42.9 MB（5.7×）</td></tr>
+    <tr><td>Params</td><td>124K</td><td>1.1M（8.9×）</td></tr>
+    <tr><td>MFLOP</td><td>418</td><td>7485（17.8×）</td></tr>
+  </table>
+
+  <h3>核心创新 3：Global Average Pooling（Slide 73）</h3>
+
+  <p>VGG 的致命弱点是最后的 FC 层吞掉了大部分参数（120M+）。GoogLeNet 用了一个极其简洁的替代方案：</p>
+
+  <div class="callout callout-why">
+    <span class="callout-label">Global Average Pooling (GAP) 消灭 FC 层</span>
+    在最后一个 Inception Module 输出 <span class="size">1024×7×7</span> 之后，用一个 <strong>7×7 的 Average Pooling</strong> 把空间维度压到 1×1，得到 <span class="size">1024×1×1</span>，然后只需一个 <strong>1024→1000 的 FC 层</strong>就能输出类别分数。<br><br>
+    对比 VGG：9216→4096→4096→1000 的三层 FC 贡献了 ~120M 参数。<br>
+    GoogLeNet：1024→1000 的一层 FC 只有 <strong>~1M 参数</strong>。<br><br>
+    <strong>总参数量只有 5M</strong>（VGG 的 1/28！），而 top-5 错误率更低（6.7% vs 7.3%）。
+  </div>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">GAP 的现代影响</span>
+    Global Average Pooling 后来成为几乎所有现代 CNN 的标配（ResNet、EfficientNet、ConvNeXt 都用它）。它的思想是：让网络的最后几层专注于"学习好的特征"，而不是用巨大的 FC 层做"特征到类别的映射"。在 Transformer 中，[CLS] token 的作用与 GAP 类似——从序列中聚合一个全局表示用于分类。
+  </div>
+</div>
+
+<!-- ===================== SECTION 5 ===================== -->
+<div class="section" id="s5">
+  <span class="section-num">PART 05</span>
+  <h2 class="section-title">ResNet (2015)：最重要的架构创新</h2>
+  <span class="slide-ref">对应 Slides 75–100</span>
+
+  <p>ResNet 由微软亚洲研究院的何恺明等人提出，是<strong>深度学习史上影响力最大的单篇论文之一</strong>。Justin 花了 20+ slides 讲它，因为它引入的残差连接至今仍是几乎所有深度网络的基础。</p>
+
+  <h3>问题：深网络反而更差？（Slide 80）</h3>
+
+  <p>有了 BatchNorm，我们终于能训练 10+ 层的网络了。但当层数继续增加时，出现了一个违反直觉的现象：</p>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">退化问题（Degradation Problem）</span>
+    56 层的网络比 20 层的网络<strong>训练误差更高</strong>（不是测试误差！），这说明这<strong>不是过拟合，而是欠拟合</strong>——更深的网络连训练数据都学不好。<br><br>
+    这很奇怪，因为理论上 56 层网络至少可以做到和 20 层一样好——让多余的 36 层学成恒等映射（identity function）就行了。但实际上，网络很难学到恒等映射——<strong>把一堆非线性变换的参数调到恰好实现"什么都不做"，是一个很难的优化问题</strong>。
+  </div>
+
+  <h3>解决方案：残差连接（Slide 83）</h3>
+
+  <p>Slide 83 是本讲最重要的一张图：Plain Block vs Residual Block。</p>
+
+  <div class="versus">
+    <div>
+      <h4>"Plain" Block</h4>
+      <div class="flow" style="flex-direction:column;gap:3px;">
+        <span class="flow-box fb-input">x</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-conv">conv</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-act">relu</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-conv">conv</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-fc">H(x)</span>
+      </div>
+      <p style="margin-top:10px;font-size:.9em;">网络需要直接学习期望的映射 H(x)。如果 H(x) ≈ x（恒等映射），就需要让 conv 的权重恰好满足这个条件——很难。</p>
+    </div>
+    <div>
+      <h4>Residual Block</h4>
+      <div class="flow" style="flex-direction:column;gap:3px;">
+        <span class="flow-box fb-input">x</span>
+        <span class="flow-arrow">↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↘ (shortcut)</span>
+        <span class="flow-box fb-conv">conv</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-act">relu</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-conv">conv</span>
+        <span class="flow-arrow">↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↗ (add)</span>
+        <span class="flow-box fb-add">F(x) + x → relu</span>
+      </div>
+      <p style="margin-top:10px;font-size:.9em;">网络只需学习<strong>残差 F(x) = H(x) − x</strong>。如果最优映射接近恒等，<strong>只需把 F(x) 推向 0</strong>——把所有权重推向零比学恒等映射容易得多！</p>
+    </div>
+  </div>
+
+  <div class="math-block">
+    <strong>Output = F(x) + x</strong><br><br>
+    反向传播时：∂L/∂x = ∂L/∂Output × (∂F(x)/∂x + <strong>I</strong>)<br>
+    那个 <strong>I</strong>（单位矩阵）保证梯度<strong>永远不会完全消失</strong>
+  </div>
+
+  <h3>Basic Block vs Bottleneck Block（Slide 93）</h3>
+
+  <p>Slide 93 展示了 ResNet 的两种 block 设计：</p>
+
+  <div class="versus">
+    <div>
+      <h4>"Basic" Block (ResNet-18/34)</h4>
+      <div class="flow" style="flex-direction:column;gap:2px;">
+        <span class="flow-box fb-conv">Conv(3×3, C→C)</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-conv">Conv(3×3, C→C)</span>
+      </div>
+      <p style="margin-top:8px;font-size:.9em;">FLOPs = 2 × 9HWC² = <strong>18HWC²</strong></p>
+    </div>
+    <div>
+      <h4>"Bottleneck" Block (ResNet-50/101/152)</h4>
+      <div class="flow" style="flex-direction:column;gap:2px;">
+        <span class="flow-box fb-norm">Conv(1×1, 4C→C) ← 降维</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-conv">Conv(3×3, C→C)</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-norm">Conv(1×1, C→4C) ← 升维</span>
+      </div>
+      <p style="margin-top:8px;font-size:.9em;">FLOPs = 4C²+9C²+4C² = <strong>17HWC²</strong><br>FLOPs 几乎相同，但 block 内有 3 层而非 2 层 → 可以在相同计算量下堆更多层！</p>
+    </div>
+  </div>
+
+  <div class="callout callout-key">
+    <span class="callout-label">Bottleneck 的精髓</span>
+    1×1 conv 先把 4C 通道压缩到 C，在低维空间做计算昂贵的 3×3 卷积，再用 1×1 conv 升回 4C。这与 GoogLeNet 的 Inception Module 使用 1×1 瓶颈是<strong>同一个思想</strong>——在低维做重活，在高维传递信息。
+  </div>
+
+  <h3>ResNet 全家族（Slide 90, 95）</h3>
+
+  <table>
+    <tr><th>模型</th><th>Block</th><th>Stage 1</th><th>Stage 2</th><th>Stage 3</th><th>Stage 4</th><th>GFLOP</th><th>Top-5 Err</th></tr>
+    <tr><td><strong>ResNet-18</strong></td><td>Basic</td><td>2 blocks (4 conv)</td><td>2 (4)</td><td>2 (4)</td><td>2 (4)</td><td>1.8</td><td>10.92</td></tr>
+    <tr><td><strong>ResNet-34</strong></td><td>Basic</td><td>3 (6)</td><td>4 (8)</td><td>6 (12)</td><td>3 (6)</td><td>3.6</td><td>8.58</td></tr>
+    <tr><td><strong>ResNet-50</strong></td><td>Bottleneck</td><td>3 (9)</td><td>4 (12)</td><td>6 (18)</td><td>3 (9)</td><td>3.8</td><td>7.13</td></tr>
+    <tr><td><strong>ResNet-101</strong></td><td>Bottleneck</td><td>3 (9)</td><td>4 (12)</td><td>23 (69)</td><td>3 (9)</td><td>7.6</td><td>6.44</td></tr>
+    <tr><td><strong>ResNet-152</strong></td><td>Bottleneck</td><td>3 (9)</td><td>8 (24)</td><td>36 (108)</td><td>3 (9)</td><td>11.3</td><td>5.94</td></tr>
+  </table>
+
+  <p>注意 ResNet-50 的 FLOPs（3.8G）只比 ResNet-34（3.6G）略多，因为 Bottleneck 的每个 block 虽然有 3 层 conv，但 FLOPs 与 Basic 的 2 层 conv 几乎相同。同时 top-5 error 从 8.58 降到了 7.13——<strong>用几乎相同的计算预算，靠更深的网络获得更好的精度</strong>。</p>
+
+  <h3>ResNet 的历史地位（Slide 98）</h3>
+
+  <p>ResNet 横扫了 2015 年 ILSVRC 和 COCO 竞赛的<strong>所有五个赛道的第一名</strong>：ImageNet Classification、ImageNet Detection、ImageNet Localization、COCO Detection、COCO Segmentation。Slide 98 引用了 Yann LeCun 对 152 层 ResNet 的评价——"Ultra-deep"。</p>
+
+  <h3>改进：Pre-Activation ResNet Block（Slide 100）</h3>
+
+  <p>He et al. 在 2016 年的后续论文中提出了一种改进的 block 结构——把 BN 和 ReLU 移到 Conv 前面：</p>
+
+  <div class="versus">
+    <div>
+      <h4>Original: Conv → BN → ReLU</h4>
+      <p>shortcut 路径上最后经过一个 ReLU，信息有损。</p>
+    </div>
+    <div>
+      <h4>Pre-Activation: BN → ReLU → Conv</h4>
+      <p>shortcut 是纯粹的恒等映射，<strong>梯度可以完全无损地流过</strong>。</p>
+    </div>
+  </div>
+
+  <p>Slide 100 显示这带来了少量精度提升（ResNet-152: 21.3 → 21.1, ResNet-200: 21.8 → 20.7），但 Justin 也诚实地指出 <em>"not actually used that much in practice"</em>——工程实践中多数人仍用原始版本。</p>
+</div>
+
+<!-- ===================== SECTION 6 ===================== -->
+<div class="section" id="s6">
+  <span class="section-num">PART 06</span>
+  <h2 class="section-title">复杂度全面对比</h2>
+  <span class="slide-ref">对应 Slides 100–107</span>
+
+  <p>Slide 103/106 是整个 Lecture 8 的"终极总结图"——将所有架构放在同一个坐标系中比较，横轴是 Operations（GFLOPs），纵轴是 Top-1 Accuracy，圆的面积表示参数量。</p>
+
+  <table>
+    <tr><th>架构</th><th>年份</th><th>层数</th><th>Params</th><th>GFLOPs</th><th>Top-1 Acc</th><th>设计亮点</th></tr>
+    <tr><td>AlexNet</td><td>2012</td><td>8</td><td>61M</td><td>0.7</td><td>~57%</td><td>首个深度 CNN</td></tr>
+    <tr><td>VGG-16</td><td>2014</td><td>16</td><td>138M</td><td>13.6</td><td>~72%</td><td>3×3 卷积，规则设计</td></tr>
+    <tr><td>GoogLeNet</td><td>2014</td><td>22</td><td>5M</td><td>1.6</td><td>~69%</td><td>Inception + GAP</td></tr>
+    <tr><td>ResNet-50</td><td>2015</td><td>50</td><td>25.6M</td><td>3.8</td><td>~76%</td><td>残差连接 + Bottleneck</td></tr>
+    <tr><td>ResNet-152</td><td>2015</td><td>152</td><td>60.2M</td><td>11.3</td><td>~78%</td><td>超深残差网络</td></tr>
+  </table>
+
+  <div class="callout callout-key">
+    <span class="callout-label">Slide 106 的三个结论</span>
+    <strong>① VGG 最贵</strong>：最高内存、最多计算，但精度不是最好。<br>
+    <strong>② GoogLeNet 最省</strong>：参数最少（5M），计算量适中，精度不错——效率王。<br>
+    <strong>③ ResNet 最好的权衡</strong>：简洁的设计、适中的效率、最高的精度。<span class="highlight">如果只记一个，记 ResNet。</span>
+  </div>
+</div>
+
+<!-- ===================== SECTION 7 ===================== -->
+<div class="section" id="s7">
+  <span class="section-num">PART 07</span>
+  <h2 class="section-title">设计规律与现代视角</h2>
+  <span class="slide-ref">贯穿整个 Lecture</span>
+
+  <h3>四个普适设计原则</h3>
+
+  <p>从 AlexNet 到 ResNet 的演进中，有四条经验不断被验证并沿用至今：</p>
+
+  <p><strong>原则 1：空间递减 + 通道递增</strong>。每个 stage 通过 stride-2 操作（pool 或 strided conv）将空间尺寸减半，同时通道数翻倍。这保证了每层的计算量大致恒定。VGG 确立了这个范式，ResNet 直接继承。</p>
+
+  <p><strong>原则 2：用小卷积核代替大卷积核</strong>。AlexNet 用 11×11 和 5×5，VGG 用全 3×3 证明了更好的效果。原因：同样的感受野下，多层小核的参数更少、非线性更多（你在上次提问中已经理解了这一点！）。</p>
+
+  <p><strong>原则 3：用 1×1 瓶颈压缩计算</strong>。GoogLeNet 的 Inception Module 和 ResNet 的 Bottleneck Block 都用 1×1 conv 在高维和低维之间"搭桥"——在低维做重活，高维传信息。</p>
+
+  <p><strong>原则 4：用 Global Average Pooling 替代 FC 层</strong>。GoogLeNet 首创，后来成为标配。消除了 FC 层的参数爆炸问题，同时让网络对输入尺寸不敏感。</p>
+
+  <h3>连接到你将学的内容</h3>
+
+  <p>Lecture 11 将介绍更多现代架构（ResNeXt、SENet、EfficientNet、NFNet 等），但它们全部都是建立在 Lecture 8 这四个模型的思想之上。更远的未来，当你在 Lecture 17-18 学到 Vision Transformer (ViT) 时，你会发现：</p>
+
+  <p><strong>ViT 的 patch embedding 就是一个大 stride 的卷积</strong>（类似 GoogLeNet 的 aggressive stem）。<strong>ViT 的每个 Transformer block 都有残差连接</strong>（直接来自 ResNet）。<strong>ViT 的 FFN 层就是两个 1×1 卷积</strong>（先升维再降维的 bottleneck 结构）。所以 Lecture 8 的内容不是"历史课"——它是理解现代一切深度网络的基础。</p>
+</div>
+
+<!-- ===================== SECTION 8 ===================== -->
+<div class="section" id="s8" style="margin-top:64px;padding-top:32px;border-top:2px solid var(--text);">
+  <h2 class="section-title">核心检查清单 ✓</h2>
+
+  <table>
+    <tr><th>#</th><th>检查项</th><th>对应 Slide</th></tr>
+    <tr><td>1</td><td>你能逐层计算任意 CNN 的 output size / memory / params / FLOPs 吗？</td><td>36–46</td></tr>
+    <tr><td>2</td><td>AlexNet 的 memory / params / FLOPs 分别集中在哪里？</td><td>50</td></tr>
+    <tr><td>3</td><td>VGG 的三条设计规则是什么？pool 后通道翻倍的计算量影响？</td><td>57, 62</td></tr>
+    <tr><td>4</td><td>Inception Module 为什么需要 1×1 瓶颈？能计算 FLOPs 的降低倍数吗？</td><td>67–70</td></tr>
+    <tr><td>5</td><td>Global Average Pooling 替代 FC 层节省了多少参数？</td><td>73</td></tr>
+    <tr><td>6</td><td>深层网络的退化问题是什么？为什么它不是过拟合？</td><td>80</td></tr>
+    <tr><td>7</td><td>残差连接 F(x)+x 为什么让恒等映射容易学习？</td><td>83</td></tr>
+    <tr><td>8</td><td>Basic Block vs Bottleneck Block 的结构和 FLOPs 对比？</td><td>93</td></tr>
+    <tr><td>9</td><td>ResNet-50 如何在几乎相同 FLOPs 下比 ResNet-34 更精确？</td><td>90, 95</td></tr>
+    <tr><td>10</td><td>四个架构在 accuracy-efficiency 图上的位置和权衡？</td><td>103, 106</td></tr>
+    <tr><td>11</td><td>残差连接的梯度流公式 ∂L/∂x 中的 I 为什么重要？</td><td>83</td></tr>
+    <tr><td>12</td><td>Pre-activation ResNet block 和原版有什么不同？</td><td>100</td></tr>
+  </table>
+
+  <div class="callout callout-tip" style="margin-top:24px;">
+    <span class="callout-label">下一步</span>
+    完成 Lecture 8 后，建议立即开始 <strong>Assignment 3</strong> 的卷积部分——手写 conv forward/backward 和 max pool 的实现。接下来看 <strong>Lecture 9–10</strong>（Training Neural Networks I & II），再完成 A3 的 BatchNorm 和 Dropout 部分。有任何问题随时来问我！
+  </div>
+</div>
+
+</div>
+</body>
+</html>
