@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lecture 11: Training Neural Networks (Part 2) — 深度讲解</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf9f6;--text:#1a1a2e;--accent:#2563eb;--accent-light:#dbeafe;--green:#059669;--green-light:#d1fae5;--red:#dc2626;--red-light:#fee2e2;--orange:#d97706;--orange-light:#fef3c7;--purple:#7c3aed;--purple-light:#ede9fe;--border:#e5e7eb;--code-bg:#1e293b;--card-shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans SC','Source Serif 4',serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:16px}
+.container{max-width:820px;margin:0 auto;padding:40px 24px 100px}
+.header{text-align:center;padding:60px 0 40px;border-bottom:2px solid var(--text);margin-bottom:48px}
+.header .tag{display:inline-block;background:var(--text);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;margin-bottom:16px}
+.header h1{font-family:'Source Serif 4',serif;font-size:2.4em;font-weight:700;line-height:1.2;margin-bottom:12px}
+.header .subtitle{font-size:1.05em;color:#666;font-style:italic}
+.toc{background:white;border:1px solid var(--border);border-radius:8px;padding:24px 28px;margin-bottom:48px;box-shadow:var(--card-shadow)}
+.toc h2{font-size:.85em;text-transform:uppercase;letter-spacing:2px;color:#999;margin-bottom:12px;font-family:'JetBrains Mono',monospace}
+.toc ol{padding-left:20px;columns:2;column-gap:32px}
+.toc li{font-size:.92em;margin-bottom:4px;break-inside:avoid}
+.toc a{color:var(--accent);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.section{margin-bottom:56px}
+.section-num{font-family:'JetBrains Mono',monospace;font-size:.8em;color:var(--accent);letter-spacing:1px}
+h2.section-title{font-family:'Source Serif 4',serif;font-size:1.7em;font-weight:700;margin:4px 0 8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.slide-ref{font-family:'JetBrains Mono',monospace;font-size:.78em;color:#999;margin-bottom:16px;display:block}
+h3{font-size:1.15em;font-weight:700;margin:28px 0 10px;color:var(--text)}
+p{margin-bottom:14px}
+.callout{border-left:4px solid;padding:14px 18px;margin:18px 0;border-radius:0 6px 6px 0;font-size:.95em}
+.callout-key{border-color:var(--accent);background:var(--accent-light)}
+.callout-why{border-color:var(--green);background:var(--green-light)}
+.callout-warn{border-color:var(--red);background:var(--red-light)}
+.callout-tip{border-color:var(--orange);background:var(--orange-light)}
+.callout-insight{border-color:var(--purple);background:var(--purple-light)}
+.callout-label{font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
+.callout-key .callout-label{color:var(--accent)}
+.callout-why .callout-label{color:var(--green)}
+.callout-warn .callout-label{color:var(--red)}
+.callout-tip .callout-label{color:var(--orange)}
+.callout-insight .callout-label{color:var(--purple)}
+pre{background:var(--code-bg);color:#e2e8f0;padding:18px 20px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.84em;line-height:1.65;margin:16px 0}
+pre code{background:none;padding:0}
+code{font-family:'JetBrains Mono',monospace;background:#f1f5f9;padding:2px 6px;border-radius:3px;font-size:.88em}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:#f8fafc;font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:.5px}
+.size{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--accent);font-weight:500}
+.diagram{background:white;border:1px solid var(--border);border-radius:8px;padding:24px;margin:20px 0;text-align:center;box-shadow:var(--card-shadow)}
+.diagram-caption{font-size:.85em;color:#666;margin-top:10px;font-style:italic}
+.versus{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.versus>div{background:white;border:1px solid var(--border);border-radius:8px;padding:16px;box-shadow:var(--card-shadow)}
+.versus h4{font-size:.95em;font-weight:700;margin-bottom:8px;text-align:center}
+.highlight{background:linear-gradient(transparent 60%,#fef08a 60%);padding:0 2px}
+strong{font-weight:700}em{font-style:italic}
+.flow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.82em}
+.flow-box{padding:7px 12px;border-radius:6px;border:2px solid;font-weight:500}
+.flow-arrow{color:#999;font-size:1.2em}
+.fb-input{background:#fef2f2;border-color:#fca5a5}.fb-conv{background:#dbeafe;border-color:#93c5fd}.fb-act{background:#d1fae5;border-color:#6ee7b7}.fb-pool{background:#fef3c7;border-color:#fcd34d}.fb-norm{background:#ede9fe;border-color:#c4b5fd}.fb-fc{background:#f3f4f6;border-color:#9ca3af}
+.math-block{text-align:center;padding:16px 0;font-size:1.1em;font-family:'Source Serif 4',serif;font-style:italic;background:white;border:1px solid var(--border);border-radius:6px;margin:16px 0;box-shadow:var(--card-shadow)}
+ul{margin:8px 0 14px 20px}ul li{margin-bottom:4px}
+ol{margin:8px 0 14px 20px}ol li{margin-bottom:6px}
+.step-card{background:white;border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin:10px 0;box-shadow:var(--card-shadow);display:flex;gap:14px;align-items:flex-start}
+.step-num{font-family:'JetBrains Mono',monospace;font-size:1.2em;font-weight:500;color:var(--accent);min-width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--accent-light);border-radius:50%}
+.step-content{flex:1}
+.step-content strong{display:block;margin-bottom:4px}
+@media(max-width:600px){.header h1{font-size:1.7em}.toc ol{columns:1}.container{padding:24px 16px 80px}.versus{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <div class="tag">EECS 498.008 / 598.008 &bull; TA 深度讲解</div>
+  <h1>Lecture 11: Training Neural Networks (Part 2)</h1>
+  <div class="subtitle">Justin Johnson &mdash; 96 slides &mdash; 训练动态 + 训练之后：LR 调度、超参数搜索、模型集成、迁移学习</div>
+</div>
+
+<nav class="toc">
+  <h2>目录 Contents</h2>
+  <ol>
+    <li><a href="#s1">全局定位：阶段二与阶段三</a></li>
+    <li><a href="#s2">正则化回顾与高级技术</a></li>
+    <li><a href="#s3">学习率调度：五种策略详解</a></li>
+    <li><a href="#s4">Early Stopping：何时停止训练</a></li>
+    <li><a href="#s5">超参数搜索：Random vs Grid</a></li>
+    <li><a href="#s6">七步超参数调优实战流程</a></li>
+    <li><a href="#s7">Loss 曲线诊断术</a></li>
+    <li><a href="#s8">模型集成（Model Ensembles）</a></li>
+    <li><a href="#s9">迁移学习：特征提取与微调</a></li>
+    <li><a href="#s10">迁移学习决策矩阵</a></li>
+  </ol>
+</nav>
+
+<!-- ====== SECTION 1 ====== -->
+<div class="section" id="s1">
+  <span class="section-num">PART 01</span>
+  <h2 class="section-title">全局定位：阶段二与阶段三</h2>
+  <span class="slide-ref">对应 Slide 4</span>
+
+  <p>回顾 Lecture 10 建立的三阶段框架（Slide 4）。Lecture 10 覆盖了阶段一（One-time Setup），本讲覆盖<strong>阶段二（Training Dynamics）</strong>和<strong>阶段三（After Training）</strong>：</p>
+
+  <div class="diagram">
+    <div class="flow" style="flex-direction:column;gap:12px;">
+      <span class="flow-box fb-fc" style="width:90%"><strong>阶段一：One-time Setup</strong>（已完成）<br>激活函数、数据预处理、权重初始化、正则化</span>
+      <span class="flow-arrow">&darr;</span>
+      <span class="flow-box fb-conv" style="width:90%;border-width:3px"><strong>阶段二：Training Dynamics</strong><br>学习率调度、超参数搜索、loss 曲线诊断 &nbsp;<span style="color:var(--red);font-weight:700">← 本讲前半</span></span>
+      <span class="flow-arrow">&darr;</span>
+      <span class="flow-box fb-act" style="width:90%;border-width:3px"><strong>阶段三：After Training</strong><br>模型集成、迁移学习 &nbsp;<span style="color:var(--red);font-weight:700">← 本讲后半</span></span>
+    </div>
+  </div>
+
+  <div class="callout callout-key">
+    <span class="callout-label">两个阶段的根本区别</span>
+    <strong>阶段二</strong>的核心问题是"怎么让训练过程更高效"——你已经确定了模型架构和初始化（阶段一），现在要决定学习率怎么变化、训练多久、超参数怎么选。<br><br>
+    <strong>阶段三</strong>的核心问题是"怎么让训练好的模型更好用"——通过集成或迁移来榨取最后的性能。
+  </div>
+</div>
+
+<!-- ====== SECTION 2 ====== -->
+<div class="section" id="s2">
+  <span class="section-num">PART 02</span>
+  <h2 class="section-title">正则化回顾与高级技术</h2>
+  <span class="slide-ref">对应 Slides 5–31</span>
+
+  <p>本讲前 31 张 slides 是对 Lecture 10 正则化内容的延续和总结。Justin 用了一个统一模式来串联所有正则化技术：</p>
+
+  <div class="callout callout-key">
+    <span class="callout-label">正则化的统一模式（Slide 9–11）</span>
+    <strong>训练时</strong>：加入某种随机性 &nbsp; y = f(x, z) &nbsp;&nbsp;（z 是随机变量）<br>
+    <strong>测试时</strong>：对随机性取平均 &nbsp; y = E<sub>z</sub>[f(x, z)] &nbsp;&nbsp;（或用近似方法消除随机性）<br><br>
+    所有正则化技术都遵循这个范式——Dropout（随机丢神经元）、BatchNorm（随机 mini-batch 统计量）、数据增强（随机变换图像）、Stochastic Depth（随机跳过 ResBlock）、Mixup/CutMix（随机混合样本）。
+  </div>
+
+  <h3>数据增强详解（Slides 12–20）</h3>
+
+  <p>Justin 详细介绍了 ResNet 训练中使用的数据增强流水线：</p>
+
+  <p><strong>训练时</strong>：(1) 随机选择 L ∈ [256, 480]，(2) 将图像短边 resize 到 L，(3) 随机裁剪 224×224 的 patch，(4) 随机水平翻转，(5) 颜色抖动（PCA color jittering）。</p>
+
+  <p><strong>测试时</strong>：(1) 将图像 resize 到 5 个尺度 {224, 256, 384, 480, 640}，(2) 每个尺度取 10 个 crop（4 角 + 中心 + 各自的水平翻转），(3) 对 50 个预测取平均。</p>
+
+  <p>Slide 18–19 介绍了 <strong>RandAugment</strong>——一种简化的自动增强策略。它只有两个超参数（变换数量 N 和强度 M），对每张图像随机选择 N 个变换（旋转、裁切、亮度、锐化等）并以强度 M 应用。相比更早的 AutoAugment（需要用强化学习搜索最优增强策略），RandAugment 更简单且效果相当。</p>
+
+  <div class="callout callout-tip">
+    <span class="callout-label">Slide 20 的核心洞见</span>
+    <em>"Data augmentation encodes invariances in your model."</em> 数据增强本质上是在告诉模型"这些变换不应该改变输出"——水平翻转的猫还是猫，颜色稍变的猫还是猫。<strong>但不同的任务需要不同的不变性</strong>：对于左右手识别，水平翻转就不再是有效的增强。你需要根据具体问题思考什么变换是合理的。
+  </div>
+
+  <h3>Slide 31：正则化总结推荐</h3>
+
+  <table>
+    <tr><th>场景</th><th>推荐正则化</th></tr>
+    <tr><td>大型全连接层</td><td>Dropout</td></tr>
+    <tr><td>任何场景</td><td>数据增强（几乎零成本）</td></tr>
+    <tr><td>CNN（ResNet 等）</td><td>L2 + BatchNorm 通常足够</td></tr>
+    <tr><td>想要更好性能</td><td>Cutout, Mixup, CutMix, Stochastic Depth, Label Smoothing</td></tr>
+    <tr><td>Vision Transformer</td><td>不用 BN，改用 LayerNorm + 其他</td></tr>
+  </table>
+</div>
+
+<!-- ====== SECTION 3 ====== -->
+<div class="section" id="s3">
+  <span class="section-num">PART 03</span>
+  <h2 class="section-title">学习率调度：五种策略详解</h2>
+  <span class="slide-ref">对应 Slides 33–41</span>
+
+  <p>学习率是<span class="highlight">最重要的超参数</span>。Justin 的核心建议（Slide 36）：<em>"Start with large learning rate and decay over time."</em> 所有调度策略都遵循这个原则——开头用大学习率快速探索，后面用小学习率精细收敛。</p>
+
+  <table>
+    <tr><th>策略</th><th>公式</th><th>特点</th><th>典型应用</th></tr>
+    <tr>
+      <td><strong>Step Decay</strong></td>
+      <td>每隔固定 epoch 乘以 0.1</td>
+      <td>简单粗暴，loss 曲线有明显的"阶梯"。需要手动选择 decay 的时机。</td>
+      <td>ResNet 原始论文（epoch 30, 60, 90 时 ×0.1）</td>
+    </tr>
+    <tr>
+      <td><strong>Cosine Annealing</strong></td>
+      <td>&alpha;<sub>t</sub> = &frac12; &alpha;<sub>0</sub> (1 + cos(t&pi;/T))</td>
+      <td>平滑衰减，无需手动选择 decay 点。从 &alpha;<sub>0</sub> 平滑降到 0。</td>
+      <td>GPT, SlowFast, RegNet, 几乎所有现代训练</td>
+    </tr>
+    <tr>
+      <td><strong>Linear Decay</strong></td>
+      <td>&alpha;<sub>t</sub> = &alpha;<sub>0</sub> (1 - t/T)</td>
+      <td>均匀线性衰减。比 Cosine 更简单。</td>
+      <td>BERT, RoBERTa, XLNet</td>
+    </tr>
+    <tr>
+      <td><strong>Inverse Sqrt</strong></td>
+      <td>&alpha;<sub>t</sub> = &alpha;<sub>0</sub> / &radic;t</td>
+      <td>前期衰减快，后期衰减慢。适合超长训练。</td>
+      <td>Transformer 原始论文 (Attention Is All You Need)</td>
+    </tr>
+    <tr>
+      <td><strong>Constant</strong></td>
+      <td>&alpha;<sub>t</sub> = &alpha;<sub>0</sub></td>
+      <td>完全不衰减！某些场景（GAN 训练）效果反而最好。</td>
+      <td>BigGAN, 某些对抗训练</td>
+    </tr>
+  </table>
+
+  <div class="callout callout-why">
+    <span class="callout-label">为什么 Cosine 是目前最流行的选择？</span>
+    Cosine 的优势在于<strong>只需要一个超参数</strong>（总训练步数 T），不需要手动选择"什么时候 decay"。它在前期衰减慢（让模型充分探索），后期衰减快（精细收敛）。Slide 38 的 loss 曲线对比显示，Cosine 产生的 loss 下降比 Step Decay 更平滑，且不需要调节 milestone。<br><br>
+    在 2025 年的实践中，<strong>Cosine Annealing + Linear Warmup</strong> 是最常见的组合：前 5–10% 的训练步用线性增长的学习率（从 0 增长到 &alpha;<sub>0</sub>），之后用 Cosine 衰减到 0。这个组合被用于几乎所有 Transformer 和现代 CNN 的训练。
+  </div>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">为什么不同论文用不同的调度？</span>
+    仔细看 Justin 在每种调度下列出的参考文献——<strong>不同任务和不同模型对学习率调度的偏好确实不同</strong>。ResNet 用 Step，Transformer 用 Cosine + Warmup 或 Inverse Sqrt，GAN 用 Constant。没有"永远最好"的选择，但 Cosine 是最安全的默认选项。
+  </div>
+</div>
+
+<!-- ====== SECTION 4 ====== -->
+<div class="section" id="s4">
+  <span class="section-num">PART 04</span>
+  <h2 class="section-title">Early Stopping：何时停止训练</h2>
+  <span class="slide-ref">对应 Slide 42</span>
+
+  <p>Slide 42 传递了一个简单但极其实用的建议：</p>
+
+  <div class="callout callout-key">
+    <span class="callout-label">两种 Early Stopping 策略</span>
+    <p><strong>策略一</strong>：当验证集精度开始下降时，停止训练。</p>
+    <p><strong>策略二</strong>（Justin 推荐）：训练足够长的时间，但<strong>始终保存验证集上表现最好的那个 checkpoint</strong>。训练结束后使用那个最佳 snapshot 作为最终模型。</p>
+    <p>Justin 的原话是 <em>"Always a good idea to do this!"</em>——这是一个零成本的好习惯。</p>
+  </div>
+
+<pre><code><span style="color:#64748b"># PyTorch 实现 Early Stopping / Best Model Saving</span>
+best_val_acc = 0.0
+for epoch in range(num_epochs):
+    train_one_epoch(model, train_loader, optimizer)
+    val_acc = evaluate(model, val_loader)
+    
+    if val_acc > best_val_acc:
+        best_val_acc = val_acc
+        torch.save(model.state_dict(), 'best_model.pth')  <span style="color:#64748b"># 保存最佳模型</span>
+    
+    print(f'Epoch {epoch}: val_acc={val_acc:.4f}, best={best_val_acc:.4f}')
+
+<span style="color:#64748b"># 训练结束后，加载最佳模型</span>
+model.load_state_dict(torch.load('best_model.pth'))</code></pre>
+</div>
+
+<!-- ====== SECTION 5 ====== -->
+<div class="section" id="s5">
+  <span class="section-num">PART 05</span>
+  <h2 class="section-title">超参数搜索：Random vs Grid</h2>
+  <span class="slide-ref">对应 Slides 43–47</span>
+
+  <p>Justin 在 Slide 46 展示了一张非常经典的图（来自 Bergstra & Bengio, 2012），直观地解释了为什么<strong>随机搜索优于网格搜索</strong>：</p>
+
+  <div class="versus">
+    <div>
+      <h4>Grid Search（网格搜索）</h4>
+      <p>在每个超参数维度上选择固定的几个值，遍历所有组合。</p>
+      <p><strong>问题</strong>：如果某个超参数不重要（如图中纵轴），网格搜索在重要参数（横轴）上实际只尝试了 3 个值——大量计算浪费在了不重要的维度上。</p>
+    </div>
+    <div>
+      <h4>Random Search（随机搜索）</h4>
+      <p>每个超参数从一个分布中随机采样。</p>
+      <p><strong>优势</strong>：即使某个维度不重要，在重要参数上也能探索到 9 个不同的值。<strong>用同样的计算预算，对重要维度的覆盖更好。</strong></p>
+    </div>
+  </div>
+
+  <div class="callout callout-tip">
+    <span class="callout-label">实践细节</span>
+    <p><strong>对数均匀采样</strong>：学习率和权重衰减这类超参数应该在对数尺度上搜索。例如学习率不是在 [0.0001, 0.1] 上均匀采样，而是在 [10<sup>-4</sup>, 10<sup>-1</sup>] 上对数均匀采样（即 <code>10 ** np.random.uniform(-4, -1)</code>）。这样 0.001 和 0.01 之间的区间与 0.01 和 0.1 之间的区间被同等对待。</p>
+    <p><strong>为什么要对数采样？</strong> 因为学习率从 0.001 变到 0.01 是"变大了 10 倍"，从 0.01 变到 0.1 也是"变大了 10 倍"——它们的影响程度是对等的。线性采样会在 [0.01, 0.1] 之间过度采样，而忽略 [0.0001, 0.001] 区间。</p>
+  </div>
+</div>
+
+<!-- ====== SECTION 6 ====== -->
+<div class="section" id="s6">
+  <span class="section-num">PART 06</span>
+  <h2 class="section-title">七步超参数调优实战流程</h2>
+  <span class="slide-ref">对应 Slides 48–62</span>
+
+  <p>这是本讲<strong>最具实战价值</strong>的部分。Justin 给出了一个不依赖大量 GPU 的、系统化的超参数搜索流程（Slides 49–62）。每一步都有明确的目标和检查标准：</p>
+
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>检查初始 loss</strong>
+      关闭权重衰减，检查初始化后的 loss 是否合理。对于 C 类的 Softmax 分类器，初始 loss 应该接近 <code>-log(1/C) = log(C)</code>。例如 CIFAR-10（10 类）的初始 loss 应该是 log(10) ≈ 2.3。如果初始 loss 偏差很大，说明模型架构或初始化有问题。
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>在小样本上过拟合</strong>
+      用 5–10 个 mini-batch 的数据，关闭正则化，尝试训练到 100% 训练准确率。这一步验证你的模型架构和训练代码是否正确。<br><br>
+      <span style="color:var(--red)">loss 不下降？</span>→ 学习率太低 或 初始化有问题<br>
+      <span style="color:var(--red)">loss 爆炸到 NaN/Inf？</span>→ 学习率太高 或 初始化有问题
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>找到让 loss 下降的学习率</strong>
+      使用全部训练数据，打开小的权重衰减，找到一个能在约 100 次迭代内让 loss 明显下降的学习率。尝试的值：1e-1, 1e-2, 1e-3, 1e-4。
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <strong>粗搜索：训练 1–5 个 epoch</strong>
+      在 Step 3 找到的学习率附近，选几个值（加上几个权重衰减值：1e-4, 1e-5, 0），训练几个短模型。快速评估哪些组合有潜力。
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <strong>细搜索：训练 10–20 个 epoch</strong>
+      从 Step 4 中挑出最好的几个模型，用更长的训练时间验证。此时不加学习率衰减——先看基础性能。
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <strong>看 learning curves！</strong>
+      这是最关键的诊断步骤（详见 Part 7）。根据 loss/accuracy 曲线的形状判断下一步该做什么。
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">7</div>
+    <div class="step-content">
+      <strong>GOTO Step 5</strong>
+      根据 Step 6 的诊断调整超参数，重复训练。这是一个迭代过程，直到你对结果满意。
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">Step 2 是最容易被跳过但最重要的一步</span>
+    很多初学者跳过"小样本过拟合"直接在全数据上训练，然后花几个小时发现 loss 不下降，最后才发现是代码写错了。<strong>先在小数据上验证你的管道能正常工作</strong>，再去做大规模训练。这个习惯在工业界也非常重要。
+  </div>
+</div>
+
+<!-- ====== SECTION 7 ====== -->
+<div class="section" id="s7">
+  <span class="section-num">PART 07</span>
+  <h2 class="section-title">Loss 曲线诊断术</h2>
+  <span class="slide-ref">对应 Slides 55–65</span>
+
+  <p>Justin 在 Slides 55–61 展示了六种典型的 loss/accuracy 曲线形状及其诊断。<strong>学会"看图说话"是深度学习工程师最核心的技能之一。</strong></p>
+
+  <table>
+    <tr><th>曲线形状</th><th>诊断</th><th>对应 Slide</th></tr>
+    <tr>
+      <td>Loss 散点图很嘈杂</td>
+      <td>正常现象，用<strong>移动平均</strong>来观察趋势</td>
+      <td>55</td>
+    </tr>
+    <tr>
+      <td>Loss 开头有一段平台期，然后才开始下降</td>
+      <td><strong>初始化可能有问题</strong>（"bad initialization a prime suspect"）。检查权重初始化方案。</td>
+      <td>56</td>
+    </tr>
+    <tr>
+      <td>Loss 下降后趋于平坦</td>
+      <td>尝试<strong>学习率衰减</strong>。当前学习率可能太大，无法精细收敛。</td>
+      <td>57</td>
+    </tr>
+    <tr>
+      <td>Step decay 后 loss 突然大幅下降</td>
+      <td>说明之前<strong>衰减得太早了</strong>——loss 还在正常下降时就被强行降低了学习率。</td>
+      <td>58</td>
+    </tr>
+    <tr>
+      <td>Train accuracy 和 Val accuracy <strong>差距很大</strong></td>
+      <td><strong>过拟合</strong>！增加正则化（Dropout, 数据增强, 权重衰减）或获取更多数据。</td>
+      <td>60</td>
+    </tr>
+    <tr>
+      <td>Train 和 Val accuracy <strong>差距很小，且都不高</strong></td>
+      <td><strong>欠拟合</strong>！训练更长时间、使用更大的模型、提高学习率。</td>
+      <td>61</td>
+    </tr>
+  </table>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">Slide 65：权重更新比例监控</span>
+    除了看 loss 曲线，Justin 还推荐监控<strong>权重更新量与权重本身的比例</strong>：<code>update_magnitude / weight_magnitude</code>。这个比例应该在 <strong>~0.001</strong> 左右。如果太大（如 0.1），说明学习率太高，权重在剧烈变化；如果太小（如 0.00001），说明学习率太低，模型几乎没在学习。
+  </div>
+</div>
+
+<!-- ====== SECTION 8 ====== -->
+<div class="section" id="s8">
+  <span class="section-num">PART 08</span>
+  <h2 class="section-title">模型集成（Model Ensembles）</h2>
+  <span class="slide-ref">对应 Slides 67–69</span>
+
+  <p>Slide 67 介绍了最简单的集成方法：训练多个独立模型，测试时对它们的预测概率取平均，然后取 argmax。Justin 说这通常能带来<strong>约 2% 的额外性能提升</strong>。</p>
+
+  <h3>三种集成技巧</h3>
+
+  <p><strong>技巧一：独立模型集成</strong>。训练 3–5 个完全独立的模型（不同的随机种子），测试时平均它们的 softmax 输出。最直观，但计算成本高（训练 N 次）。</p>
+
+  <p><strong>技巧二：Snapshot Ensemble（Slide 68）</strong>。使用<strong>周期性学习率</strong>（cyclic cosine schedule），在每个周期结束时保存一个 checkpoint。由于每次重新升高学习率会让模型跳出当前局部最小值并收敛到不同的最小值，这些 snapshot 具有<strong>多样性</strong>——本质上是"训练 1 次，获得 M 个模型"。</p>
+
+  <p><strong>技巧三：Polyak Averaging / EMA（Slide 69）</strong>。不使用训练结束时的参数，而是维护一个参数的<strong>指数移动平均</strong>（Exponential Moving Average），测试时使用 EMA 参数。</p>
+
+  <div class="math-block">
+    &theta;<sub>EMA</sub> &larr; &beta; &middot; &theta;<sub>EMA</sub> + (1 - &beta;) &middot; &theta;<sub>current</sub> &emsp;&emsp; (&beta; 通常取 0.999 或 0.9999)
+  </div>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">EMA 在 2025 年的重要性</span>
+    Polyak/EMA Averaging 在现代训练中越来越重要。Stable Diffusion 的 U-Net 训练使用 EMA 参数来生成更高质量的图像。GPT 风格的大语言模型训练中也普遍使用 EMA。PyTorch 现在有原生的 <code>torch.optim.swa_utils.AveragedModel</code> 来实现这个功能。它几乎不增加计算成本，但通常能显著平滑模型的预测——属于"免费午餐"级别的技巧。
+  </div>
+</div>
+
+<!-- ====== SECTION 9 ====== -->
+<div class="section" id="s9">
+  <span class="section-num">PART 09</span>
+  <h2 class="section-title">迁移学习：特征提取与微调</h2>
+  <span class="slide-ref">对应 Slides 70–83</span>
+
+  <p>这是本讲后半段的核心内容。Justin 从 Slide 71 开始抛出一个常见误解并立即"打破"它（Slide 72 的 "BUSTED" 标记）：</p>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">被打破的迷思</span>
+    <em>"You need a lot of data if you want to train/use CNNs"</em><br>
+    这句话在从头训练（training from scratch）时是对的，但迁移学习让你<strong>只需要很少的数据</strong>就能利用强大的 CNN 特征。
+  </div>
+
+  <h3>迁移学习的两种模式（Slides 73–80）</h3>
+
+  <div class="versus">
+    <div>
+      <h4 style="color:var(--accent)">模式一：特征提取<br>(Feature Extraction)</h4>
+      <p><strong>步骤</strong>：(1) 在 ImageNet 上预训练一个 CNN，(2) 去掉最后一层 FC，(3) 冻结所有卷积层的权重，(4) 在新数据集上只训练一个新的线性分类器。</p>
+      <p><strong>适用场景</strong>：新数据集<strong>很小</strong>（几十到几百张），与 ImageNet 相似。</p>
+      <p><strong>效果</strong>：Slide 75 展示了在鸟类分类数据集上，AlexNet 特征 + 逻辑回归（65%）大幅超越了当时所有手工特征方法（51–57%）。</p>
+    </div>
+    <div>
+      <h4 style="color:var(--green)">模式二：微调<br>(Fine-Tuning)</h4>
+      <p><strong>步骤</strong>：(1) 在 ImageNet 上预训练，(2) 去掉最后一层 FC，(3) 用<strong>较低的学习率</strong>继续训练整个网络（或部分层）。</p>
+      <p><strong>适用场景</strong>：新数据集<strong>较大</strong>（几百到几千张）。</p>
+      <p><strong>Slide 80 的四条实战技巧</strong>：<br>
+      (a) 先做特征提取，再做微调<br>
+      (b) 学习率设为原始训练的 <strong>~1/10</strong><br>
+      (c) 可冻结底层（更通用的特征），只微调顶层<br>
+      (d) BatchNorm 层在微调时使用<strong>"test"模式</strong>（固定统计量）</p>
+    </div>
+  </div>
+
+  <h3>CNN 特征的"通用性到特异性"谱系</h3>
+
+  <p>Justin 在 Slide 84–87 中引入了一个重要概念：CNN 的不同层学到的特征有不同的"通用性"。底层（conv1, conv2）学到的是<strong>通用的</strong>边缘和纹理检测器，几乎对所有视觉任务都有用。顶层（conv5, FC）学到的是<strong>特定于训练任务</strong>的高级特征——对 ImageNet 的 1000 类分类有用，但对医学图像可能没用。</p>
+
+  <div class="callout callout-key">
+    <span class="callout-label">迁移学习的关键直觉</span>
+    底层特征 ≈ 通用视觉特征（edge, texture, color），<strong>可以直接迁移到几乎任何视觉任务</strong>。<br>
+    顶层特征 ≈ 任务特定特征（ImageNet 类别的判别特征），<strong>需要根据新任务重新学习</strong>。<br><br>
+    所以微调策略的核心是：<strong>保留通用的底层，替换/调整特定的顶层</strong>。
+  </div>
+</div>
+
+<!-- ====== SECTION 10 ====== -->
+<div class="section" id="s10">
+  <span class="section-num">PART 10</span>
+  <h2 class="section-title">迁移学习决策矩阵</h2>
+  <span class="slide-ref">对应 Slides 84–94</span>
+
+  <p>Slide 87 是本讲的<strong>终极决策图</strong>——一个 2×2 的矩阵，根据"数据量"和"与 ImageNet 的相似度"两个维度，告诉你应该选择哪种迁移策略：</p>
+
+  <table>
+    <tr><th></th><th>与 ImageNet 相似</th><th>与 ImageNet 差异大</th></tr>
+    <tr>
+      <td><strong>数据很少</strong><br>(10s–100s)</td>
+      <td style="background:#d1fae5">在顶层特征上训练<strong>线性分类器</strong></td>
+      <td style="background:#fee2e2"><span style="color:var(--red)">困难！</span>尝试在<strong>不同层</strong>提取特征做线性分类</td>
+    </tr>
+    <tr>
+      <td><strong>数据较多</strong><br>(100s–1000s)</td>
+      <td style="background:#dbeafe"><strong>微调顶部几层</strong></td>
+      <td style="background:#fef3c7"><strong>微调更多层</strong>（可能全部层）</td>
+    </tr>
+  </table>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">右上角：最棘手的场景</span>
+    数据少 + 与 ImageNet 差异大（比如只有 50 张医学 CT 图像），这是迁移学习最困难的场景。顶层特征太"ImageNet 化"，用处不大；底层特征虽然更通用，但可能也不完全适用。Justin 的建议是：<strong>尝试从不同的中间层提取特征</strong>，看哪一层的表示对你的任务最有效。
+  </div>
+
+  <h3>迁移学习的现代视角（Slides 88–94）</h3>
+
+  <p>Slide 82–83 展示了一个深刻的事实：<strong>CNN 架构的改进通过迁移学习惠及所有下游任务</strong>。当 VGG 替代 AlexNet、ResNet 替代 VGG 时，不仅 ImageNet 分类精度提升，目标检测、图像分割、图像描述生成等下游任务的精度也同步提升——因为它们都使用了预训练的 backbone。</p>
+
+  <p>Slide 92–94 讨论了一个有趣的反思：He et al. (ICCV 2019) 发现在 COCO 目标检测上，<strong>如果训练足够长时间，从头训练可以达到与预训练+微调相当的精度</strong>。但预训练仍然有价值，因为它使训练更快（收敛更快），并且在<strong>数据很少时</strong>优势依然明显（Slide 93 的对比图）。</p>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">Justin 对迁移学习的总结观点（Slide 94）</span>
+    <p><strong>预训练+微调</strong>让训练更快，在实践中非常有用。</p>
+    <p><strong>从头训练</strong>在数据充足时可以达到同样的精度，但需要更长的训练时间。</p>
+    <p>迁移学习<strong>无处不在</strong>——它是常态而非例外。目标检测用 ImageNet 预训练的 CNN，NLP 用 word2vec/BERT 预训练的语言模型，多模态模型同时使用视觉和语言的预训练组件。</p>
+  </div>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">2025 年的迁移学习生态</span>
+    在当下，迁移学习的范式已经进化到 <strong>Foundation Model</strong> 阶段。ImageNet 预训练的 ResNet 被 CLIP（视觉-语言对齐预训练）、DINOv2（自监督视觉预训练）、SAM（Segment Anything Model）等更强大的预训练模型所取代。但 Justin 讲授的核心框架——冻结 vs 微调、底层通用 vs 顶层特定、数据量与策略的对应关系——<strong>在 Foundation Model 时代依然完全适用</strong>。
+  </div>
+</div>
+
+<!-- ====== CONNECTIONS ====== -->
+<div class="section" style="margin-top:48px;padding-top:32px;border-top:1px dashed var(--border);">
+  <span class="section-num">CONNECTIONS</span>
+  <h2 class="section-title">知识串联：前后连接</h2>
+
+  <h3>与前面的连接</h3>
+  <ul>
+    <li><strong>Lecture 7（BatchNorm）</strong>：微调时 BN 使用"test"模式，正是因为 BN 的训练/测试模式差异（Lecture 7 重点）</li>
+    <li><strong>Lecture 8（CNN 架构）</strong>：迁移学习的效果直接受 backbone 架构影响——ResNet 比 AlexNet 的迁移特征更强</li>
+    <li><strong>Lecture 9（PyTorch）</strong>：<code>model.parameters()</code> 的理解决定了你如何正确冻结/解冻层</li>
+    <li><strong>Lecture 10（Part 1）</strong>：权重初始化 + Dropout + 数据增强是阶段一的基础，本讲的阶段二/三建立在其上</li>
+  </ul>
+
+  <h3>与后面的连接</h3>
+  <ul>
+    <li><strong>Lecture 13（目标检测）</strong>：Fast R-CNN、Faster R-CNN 都使用 ImageNet 预训练的 backbone——迁移学习的直接应用</li>
+    <li><strong>Lecture 17–18（Transformer/ViT）</strong>：ViT 的训练同样使用 Cosine + Warmup 调度，且迁移学习在 ViT 上同样有效</li>
+    <li><strong>Lecture 22（自监督学习）</strong>：自监督预训练（如 MAE）是迁移学习的"上游"——用无标签数据预训练，再迁移到有标签任务</li>
+  </ul>
+</div>
+
+<!-- ====== COMPETITIVE EDGE ====== -->
+<div class="section" style="margin-top:48px;padding-top:32px;border-top:1px dashed var(--border);">
+  <span class="section-num">COMPETITIVE EDGE</span>
+  <h2 class="section-title">Vibe Coding 时代的竞争力</h2>
+
+  <div class="callout callout-key">
+    <span class="callout-label">场景：你让 AI 生成了训练代码，但精度很低</span>
+    AI 生成的代码通常用默认超参数（lr=1e-3, Adam）。你需要用 Part 6 的七步流程来系统调优——先验证初始 loss，再在小样本上过拟合，再做 coarse-to-fine search。这个<strong>系统化的调试思维</strong>是 AI 无法替你做的。
+  </div>
+
+  <div class="callout callout-key">
+    <span class="callout-label">场景：你的数据集只有 200 张图片</span>
+    AI 可能会建议"收集更多数据"——但你可能没有这个条件。你需要知道：(1) 用 ImageNet 预训练的 ResNet 做特征提取，(2) 冻结所有层只训练线性分类器，(3) 使用强数据增强。这个<strong>决策能力</strong>来自 Part 9–10 的迁移学习知识。
+  </div>
+</div>
+
+<!-- ====== CHECKLIST ====== -->
+<div class="section" style="margin-top:64px;padding-top:32px;border-top:2px solid var(--text);">
+  <h2 class="section-title">核心检查清单</h2>
+
+  <table>
+    <tr><th>#</th><th>检查项</th><th>对应 Slide</th></tr>
+    <tr><td>1</td><td>所有正则化技术遵循什么统一模式？能举三个例子吗？</td><td>9–11</td></tr>
+    <tr><td>2</td><td>RandAugment 与 AutoAugment 的区别？为什么 RandAugment 更实用？</td><td>18–19</td></tr>
+    <tr><td>3</td><td>五种学习率调度的公式和典型应用场景？</td><td>37–41</td></tr>
+    <tr><td>4</td><td>为什么 Cosine Annealing 是最流行的默认选择？</td><td>38</td></tr>
+    <tr><td>5</td><td>Early Stopping 的两种策略？哪种更推荐？</td><td>42</td></tr>
+    <tr><td>6</td><td>为什么 Random Search 优于 Grid Search？</td><td>46</td></tr>
+    <tr><td>7</td><td>七步超参数调优流程的每一步具体做什么？</td><td>49–62</td></tr>
+    <tr><td>8</td><td>六种典型 loss 曲线各代表什么问题？如何修复？</td><td>55–61</td></tr>
+    <tr><td>9</td><td>权重更新/权重大小的比例应该在什么范围？</td><td>65</td></tr>
+    <tr><td>10</td><td>Snapshot Ensemble 和 Polyak/EMA Averaging 的区别？</td><td>68–69</td></tr>
+    <tr><td>11</td><td>特征提取 vs 微调的适用场景？微调的四条实战技巧？</td><td>73–80</td></tr>
+    <tr><td>12</td><td>迁移学习 2×2 决策矩阵的四个象限各用什么策略？</td><td>87</td></tr>
+    <tr><td>13</td><td>CNN 底层特征 vs 顶层特征的"通用性"有什么区别？</td><td>84</td></tr>
+    <tr><td>14</td><td>"从头训练 vs 预训练+微调"各自在什么条件下更好？</td><td>92–94</td></tr>
+  </table>
+
+  <div class="callout callout-tip" style="margin-top:24px;">
+    <span class="callout-label">下一步</span>
+    Lecture 10 + 11 合在一起覆盖了训练神经网络的完整三个阶段。建议你现在去做 <strong>Assignment 3</strong> 的剩余部分（如果还没完成），然后开始 <strong>Assignment 4</strong>（目标检测）——你将在 A4 中实际体验迁移学习的威力。接下来是 <strong>Lecture 12</strong>（高级 CNN 架构）和 <strong>Lecture 13</strong>（目标检测）。有任何问题随时来问我！
+  </div>
+</div>
+
+</div>
+</body>
+</html>
