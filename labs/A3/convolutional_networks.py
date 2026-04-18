@@ -210,7 +210,7 @@ class MaxPool(object):
                         W_start = j * stride
 
                         # 1. 重新提取当时的窗口
-                        window = x[n, c, h_start:h_start+pool_height, w_start:w_start+pool_width]
+                        window = x[n, c, H_start:H_start+pool_height, W_start:W_start+pool_width]
                         
                         # 2 & 3. 严谨的 argmax 路由逻辑
                         flat_window = window.reshape(-1)               # 展平窗口
@@ -285,7 +285,22 @@ class ThreeLayerConvNet(object):
         # look at the start of the loss() function to see how that happens.  #
         ######################################################################
         # Replace "pass" statement with your code
-        pass
+        C, H, W = input_dims
+        F = num_filters
+        HH = WW = filter_size
+
+        self.params['W1'] = torch.randn(F, C, HH, WW, dtype=dtype, device=device) * weight_scale
+        self.params['b1'] = torch.zeros(F, dtype=dtype, device=device)
+
+        H_pool = H // 2
+        W_pool = W // 2
+        flatten_dim = F * H_pool * W_pool
+
+        self.params['W2'] = torch.randn(flatten_dim, hidden_dim, dtype=dtype, device=device) * weight_scale
+        self.params['b2'] = torch.randn(hidden_dim, dtype=dtype, device=device)
+
+        self.params['W3'] = torch.randn(hidden_dim, num_classes, dtype=dtype, device=device) * weight_scale
+        self.params['b3'] = torch.randn(num_classes, dtype=dtype, device=device)
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
@@ -334,7 +349,10 @@ class ThreeLayerConvNet(object):
         # above                                                              #
         ######################################################################
         # Replace "pass" statement with your code
-        pass
+        out1, cache1 = Conv_ReLU_Pool.forward(X, W1, b1, conv_param, pool_param)
+        out2, cache2 = Linear_ReLU.forward(out1, W2, b2)
+        scores, cache3 = Linear.forward(out2, W3, b3)
+
         ######################################################################
         #                             END OF YOUR CODE                       #
         ######################################################################
@@ -355,7 +373,24 @@ class ThreeLayerConvNet(object):
         # does not include a factor of 0.5                                 #
         ####################################################################
         # Replace "pass" statement with your code
-        pass
+        loss, dscores = softmax_loss(scores, y)
+        loss += self.reg * (torch.sum(W1**2) + torch.sum(W2**2) + torch.sum(W3**2))
+
+        # Layer3
+        dout2, dW3, db3 = Linear.backward(dscores, cache3)
+        # Layer2
+        dout1, dW2, db2 = Linear_ReLU.backward(dout2, cache2)
+        # Layer1
+        dX, dW1, db1 = Conv_ReLU_Pool.backward(dout1, cache1)
+        
+        grads['W3'] = dW3 + 2 * self.reg * W3
+        grads['b3'] = db3
+
+        grads['W2'] = dW2 + 2 * self.reg * W2
+        grads['b2'] = db2
+
+        grads['W1'] = dW1 + 2 * self.reg * W1
+        grads['b1'] = db1
         ###################################################################
         #                             END OF YOUR CODE                    #
         ###################################################################
@@ -439,7 +474,29 @@ class DeepConvNet(object):
         # initilized to ones and zeros respectively.                        #
         #####################################################################
         # Replace "pass" statement with your code
-        pass
+        C, W, H = input_dims
+        filter_size = 3
+        cur_C = C
+        cur_H = H
+        cur_W = W
+        for i in range(self.num_layers - 1):
+            F = num_filters[i]
+            self.params[f'W{i+1}'] = torch.randn(F, cur_C, filter_size, filter_size, dtype=dtype, device=device) * weight_scale
+            self.params[f'b{i+1}'] = torch.zeros(F, dtype=dtype, device=device)
+            
+            if self.batchnorm:
+                self.params[f'gamma{i+1}'] = torch.ones(F, dtype=dtype, device=device)
+                self.params[f'beta{i+1}'] = torch.zeros(F, dtype=dtype, device=device)
+
+            cur_C = F
+
+            if i in self.max_pools:
+                cur_H = cur_H // 2
+                cur_W = cur_W // 2
+
+        flatten_dim = cur_C * cur_H * cur_W
+        self.params[f'W{self.num_layers}'] = torch.randn(flatten_dim, num_classes, dtype=dtype, device=device) * weight_scale
+        self.params[f'b{self.num_layers}'] = torch.zeros(num_classes, dtype=dtype, device=device)
         ################################################################
         #                      END OF YOUR CODE                        #
         ################################################################
@@ -546,7 +603,24 @@ class DeepConvNet(object):
         # layers, to simplify your implementation.              #
         #########################################################
         # Replace "pass" statement with your code
-        pass
+        caches = []
+        out = X
+
+        for i in range(self.num_layers - 1):
+            w = self.params[f'W{i+1}']
+            b = self.params[f'b{i+1}']
+
+            if i in self.max_pools:
+                out, cache = Conv_ReLU_Pool.forward(out, w, b, conv_param, pool_param)
+            else:
+                out, cache = Conv_ReLU.forward(out, w, b, conv_param)
+
+            caches.append(cache)
+        
+        W_last = self.params[f'W{self.num_layers}']
+        b_last = self.params[f'b{self.num_layers}']
+        scores, cache_last = Linear.forward(out, W_last, b_last)
+        caches.append(cache_last)
         #####################################################
         #                 END OF YOUR CODE                  #
         #####################################################
@@ -567,7 +641,27 @@ class DeepConvNet(object):
         # does not include a factor of 0.5                                #
         ###################################################################
         # Replace "pass" statement with your code
-        pass
+        loss, dout = softmax_loss(scores, y)
+        for i in range(1, self.num_layers+1):
+            W = self.params[f'W{i}']
+            loss += self.reg * torch.sum(W**2)
+
+        dout, dw_last, db_last = Linear.backward(dout, caches.pop())
+        grads[f'W{self.num_layers}'] = dw_last + 2 * self.reg * self.params[f'W{self.num_layers}']
+        grads[f'b{self.num_layers}'] = db_last
+
+        for i in range(self.num_layers - 2, -1, -1):
+            cache = caches.pop()
+
+            if i in self.max_pools:
+                dout, dw, db = Conv_ReLU_Pool.backward(dout, cache)
+            else:
+                dout, dw, db = Conv_ReLU.backward(dout, cache)
+
+            caches.append(cache)
+        
+            grads[f'W{i+1}'] = dw * 2 * self.reg * self.params[f'W{i+1}']
+            grads[f'b{i+1}'] = db
         #############################################################
         #                       END OF YOUR CODE                    #
         #############################################################
