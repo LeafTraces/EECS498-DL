@@ -1,0 +1,519 @@
+
+<style>
+  .review-nav { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 0.5px solid var(--color-border-tertiary); padding-bottom: 0; }
+  .review-tab { padding: 10px 14px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--color-text-secondary); cursor: pointer; font: 13px var(--font-sans); transition: all 0.15s; border-radius: 0; }
+  .review-tab:hover { color: var(--color-text-primary); }
+  .review-tab.active { color: var(--color-text-primary); border-bottom-color: var(--color-text-info); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .section-title { font-size: 15px; font-weight: 500; margin: 0 0 6px; color: var(--color-text-primary); }
+  .section-desc { font-size: 13px; color: var(--color-text-secondary); margin: 0 0 16px; line-height: 1.55; }
+
+  .matrix-display { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; margin: 8px 0; font: 12px var(--font-mono); overflow-x: auto; }
+  .matrix-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .matrix-row { display: flex; gap: 6px; margin-bottom: 2px; }
+  .matrix-cell { min-width: 52px; padding: 3px 6px; text-align: right; border-radius: 3px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); font-size: 12px; transition: background 0.2s; }
+  .matrix-cell.highlight { background: #FAEEDA; border-color: #BA7517; color: #412402; }
+  @media (prefers-color-scheme: dark) { .matrix-cell.highlight { background: #412402; color: #FAC775; border-color: #EF9F27; } }
+
+  .step-controls { display: flex; align-items: center; gap: 10px; margin: 16px 0; flex-wrap: wrap; }
+  .step-label { font-size: 13px; color: var(--color-text-secondary); margin-left: auto; }
+  .step-info { background: var(--color-background-info); color: var(--color-text-info); padding: 10px 12px; border-radius: var(--border-radius-md); font-size: 13px; line-height: 1.55; margin: 10px 0; }
+
+  .hparam-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+  @media (max-width: 600px) { .hparam-grid { grid-template-columns: 1fr; } }
+  .hparam-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 14px; }
+  .hparam-card .label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .hparam-card .value { font: 500 18px var(--font-mono); color: var(--color-text-primary); }
+  .hparam-card .hint { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; }
+
+  .quiz-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 16px; margin: 12px 0; }
+  .quiz-choices { display: grid; gap: 8px; margin-top: 12px; }
+  .quiz-choice { padding: 10px 12px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); cursor: pointer; font: 13px var(--font-sans); text-align: left; transition: all 0.15s; }
+  .quiz-choice:hover { border-color: var(--color-border-secondary); }
+  .quiz-choice.correct { background: #EAF3DE; border-color: #639922; color: #27500A; }
+  .quiz-choice.wrong { background: #FCEBEB; border-color: #E24B4A; color: #791F1F; }
+  @media (prefers-color-scheme: dark) {
+    .quiz-choice.correct { background: #173404; color: #C0DD97; border-color: #97C459; }
+    .quiz-choice.wrong { background: #501313; color: #F7C1C1; border-color: #F09595; }
+  }
+  .quiz-feedback { padding: 10px 12px; border-radius: var(--border-radius-md); margin-top: 10px; font-size: 13px; line-height: 1.55; display: none; }
+  .quiz-feedback.show { display: block; }
+
+  .flashcard-deck { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 12px 0; }
+  .flashcard { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 14px; cursor: pointer; min-height: 120px; transition: border-color 0.15s; }
+  .flashcard:hover { border-color: var(--color-border-secondary); }
+  .flashcard .front { font-weight: 500; font-size: 14px; color: var(--color-text-primary); }
+  .flashcard .back { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; margin-top: 8px; display: none; }
+  .flashcard.revealed .back { display: block; }
+  .flashcard.revealed { background: var(--color-background-secondary); }
+  .flashcard code { font: 12px var(--font-mono); background: var(--color-background-tertiary); padding: 1px 5px; border-radius: 3px; }
+
+  .btn { padding: 6px 14px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); cursor: pointer; font: 13px var(--font-sans); transition: all 0.15s; }
+  .btn:hover { background: var(--color-background-secondary); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--color-text-info); color: white; border-color: var(--color-text-info); }
+  .btn-primary:hover { opacity: 0.9; background: var(--color-text-info); }
+
+  .formula { background: var(--color-background-secondary); padding: 8px 12px; border-radius: var(--border-radius-md); font: 13px var(--font-mono); color: var(--color-text-primary); margin: 6px 0; }
+  .arch-diagram { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; padding: 12px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); margin: 12px 0; font: 12px var(--font-mono); }
+  .arch-node { padding: 6px 10px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: 4px; color: var(--color-text-primary); }
+  .arch-node.current { background: #FAEEDA; border-color: #BA7517; color: #412402; font-weight: 500; }
+  @media (prefers-color-scheme: dark) { .arch-node.current { background: #412402; color: #FAC775; border-color: #EF9F27; } }
+  .arch-arrow { color: var(--color-text-secondary); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 12px 0; }
+  .stat-box { background: var(--color-background-secondary); padding: 10px 12px; border-radius: var(--border-radius-md); }
+  .stat-label { font-size: 11px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .stat-value { font: 500 16px var(--font-mono); color: var(--color-text-primary); }
+  .stat-value.warn { color: #BA7517; }
+  .stat-value.bad { color: #A32D2D; }
+  .stat-value.good { color: #3B6D11; }
+</style>
+
+<h2 class="sr-only">Deep learning review tool with four interactive panels: forward/backward pass tracer, hyperparameter explorer, loss curve quiz, and concept flashcards.</h2>
+
+<div class="review-nav">
+  <button class="review-tab active" data-panel="trace">Forward/Backward 追踪</button>
+  <button class="review-tab" data-panel="hparam">超参数实验室</button>
+  <button class="review-tab" data-panel="quiz">Loss曲线诊断</button>
+  <button class="review-tab" data-panel="flash">概念速查卡</button>
+</div>
+
+<div id="panel-trace" class="tab-panel active">
+  <p class="section-title">Forward / Backward 数值追踪器</p>
+  <p class="section-desc">这是一个真实的2层网络（4→3→2），所有数字都是实时计算的。点击"下一步"逐步推进，观察每一步的数据流和梯度流。</p>
+
+  <div class="arch-diagram" id="arch-display">
+    <span class="arch-node" data-step="0">X (2×4)</span>
+    <span class="arch-arrow">→</span>
+    <span class="arch-node" data-step="1">Linear W1</span>
+    <span class="arch-arrow">→</span>
+    <span class="arch-node" data-step="2">ReLU</span>
+    <span class="arch-arrow">→</span>
+    <span class="arch-node" data-step="3">Linear W2</span>
+    <span class="arch-arrow">→</span>
+    <span class="arch-node" data-step="4">Softmax loss</span>
+  </div>
+
+  <div class="step-controls">
+    <button class="btn" id="trace-reset">重置</button>
+    <button class="btn btn-primary" id="trace-next">下一步 →</button>
+    <button class="btn" id="trace-prev">← 上一步</button>
+    <span class="step-label" id="step-label">步骤 0 / 9</span>
+  </div>
+
+  <div class="step-info" id="step-info"></div>
+  <div id="matrix-area"></div>
+</div>
+
+<div id="panel-hparam" class="tab-panel">
+  <p class="section-title">超参数实验室</p>
+  <p class="section-desc">调整 weight_scale 和 learning_rate，实时观察它们对一层激活值、初始 loss 和梯度大小的影响。这能让你理解"超参数耦合"的真正含义。</p>
+
+  <div style="margin: 16px 0;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+      <label style="font-size: 13px; color: var(--color-text-secondary); min-width: 130px;">weight_scale</label>
+      <input type="range" id="ws-slider" min="-5" max="0" step="0.25" value="-2" style="flex: 1;">
+      <span style="font: 500 13px var(--font-mono); min-width: 85px; text-align: right;" id="ws-value">1.00e-2</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <label style="font-size: 13px; color: var(--color-text-secondary); min-width: 130px;">learning_rate</label>
+      <input type="range" id="lr-slider" min="-5" max="1" step="0.25" value="-1" style="flex: 1;">
+      <span style="font: 500 13px var(--font-mono); min-width: 85px; text-align: right;" id="lr-value">1.00e-1</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; margin-top: 12px;">
+      <label style="font-size: 13px; color: var(--color-text-secondary); min-width: 130px;">网络深度</label>
+      <input type="range" id="depth-slider" min="2" max="10" step="1" value="3" style="flex: 1;">
+      <span style="font: 500 13px var(--font-mono); min-width: 85px; text-align: right;" id="depth-value">3 层</span>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-box">
+      <div class="stat-label">第1层激活 std</div>
+      <div class="stat-value" id="act1-val">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">最后一层激活 std</div>
+      <div class="stat-value" id="actL-val">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">初始 loss</div>
+      <div class="stat-value" id="loss-val">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">预期梯度量级</div>
+      <div class="stat-value" id="grad-val">—</div>
+    </div>
+  </div>
+
+  <div style="margin-top: 16px;">
+    <div style="position: relative; height: 240px;">
+      <canvas id="loss-curve-chart" role="img" aria-label="Predicted loss curve for current hyperparameter settings."></canvas>
+    </div>
+  </div>
+
+  <div class="step-info" id="hparam-advice"></div>
+</div>
+
+<div id="panel-quiz" class="tab-panel">
+  <p class="section-title">Loss 曲线诊断考试</p>
+  <p class="section-desc">我会展示不同形状的 loss 曲线，你来判断问题出在哪里、该怎么修。共 5 题，完成后显示分数。</p>
+
+  <div class="quiz-card" id="quiz-container">
+    <div style="margin-bottom: 10px; font-size: 13px; color: var(--color-text-secondary);">
+      题目 <span id="q-num">1</span> / 5 · 当前得分 <span id="q-score">0</span>
+    </div>
+    <div style="position: relative; height: 200px; margin-bottom: 12px;">
+      <canvas id="quiz-chart" role="img" aria-label="Loss curve for the current quiz question."></canvas>
+    </div>
+    <div style="font-size: 14px; color: var(--color-text-primary); font-weight: 500;" id="q-prompt">症状：</div>
+    <div class="quiz-choices" id="q-choices"></div>
+    <div class="quiz-feedback" id="q-feedback"></div>
+    <button class="btn btn-primary" id="q-next" style="margin-top: 10px; display: none;">下一题</button>
+    <button class="btn btn-primary" id="q-restart" style="margin-top: 10px; display: none;">重新开始</button>
+  </div>
+</div>
+
+<div id="panel-flash" class="tab-panel">
+  <p class="section-title">核心概念速查卡</p>
+  <p class="section-desc">点击卡片翻面查看答案。这些是最重要的21个概念，覆盖 Lecture 1-12 和 A3 作业所有要点。</p>
+  <div class="flashcard-deck" id="flashcards"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const tabs = document.querySelectorAll('.review-tab');
+tabs.forEach(t => t.onclick = () => {
+  tabs.forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('panel-' + t.dataset.panel).classList.add('active');
+  if (t.dataset.panel === 'hparam' && !window.__hparamInit) { window.__hparamInit = true; updateHparam(); }
+  if (t.dataset.panel === 'quiz' && !window.__quizInit) { window.__quizInit = true; renderQuiz(0); }
+});
+
+function mat(rows, cols, vals) {
+  const m = [];
+  for (let i = 0; i < rows; i++) m.push(vals.slice(i*cols, (i+1)*cols));
+  return m;
+}
+function matmul(A, B) {
+  const rA = A.length, cA = A[0].length, cB = B[0].length;
+  const C = Array.from({length: rA}, () => new Array(cB).fill(0));
+  for (let i = 0; i < rA; i++) for (let j = 0; j < cB; j++) for (let k = 0; k < cA; k++) C[i][j] += A[i][k] * B[k][j];
+  return C;
+}
+function transpose(A) { return A[0].map((_,j) => A.map(r => r[j])); }
+function addBias(M, b) { return M.map(r => r.map((v,j) => v + b[j])); }
+function relu(M) { return M.map(r => r.map(v => Math.max(0, v))); }
+function reluMask(M) { return M.map(r => r.map(v => v > 0 ? 1 : 0)); }
+function hadamard(A, B) { return A.map((r,i) => r.map((v,j) => v * B[i][j])); }
+function colSum(M) { return M[0].map((_,j) => M.reduce((s,r) => s + r[j], 0)); }
+function softmax(M) { return M.map(r => { const mx = Math.max(...r); const e = r.map(v => Math.exp(v-mx)); const s = e.reduce((a,b)=>a+b,0); return e.map(v => v/s); }); }
+
+const X = mat(2, 4, [ 0.5, -0.3, 0.8, 0.1,  0.2, 0.7, -0.4, 0.6 ]);
+const y = [1, 0];
+const W1 = mat(4, 3, [ 0.1, -0.2, 0.3,  0.4, 0.5, -0.1,  -0.3, 0.2, 0.4,  0.1, -0.4, 0.2 ]);
+const b1 = [0.1, -0.1, 0.0];
+const W2 = mat(3, 2, [ 0.2, -0.5,  -0.3, 0.4,  0.5, 0.1 ]);
+const b2 = [0.0, 0.1];
+
+function fmt(v) { return (Math.abs(v) < 0.005 && v !== 0) ? v.toExponential(1) : v.toFixed(3); }
+function renderMat(label, M, highlightIdx) {
+  let html = `<div class="matrix-label">${label} · shape (${M.length}, ${M[0].length})</div>`;
+  for (const row of M) {
+    html += '<div class="matrix-row">';
+    for (const v of row) {
+      const hl = highlightIdx && highlightIdx.includes(row.indexOf(v)) ? 'highlight' : '';
+      html += `<span class="matrix-cell ${hl}">${fmt(v)}</span>`;
+    }
+    html += '</div>';
+  }
+  return `<div class="matrix-display">${html}</div>`;
+}
+function renderVec(label, v) {
+  let html = `<div class="matrix-label">${label} · shape (${v.length},)</div><div class="matrix-row">`;
+  for (const x of v) html += `<span class="matrix-cell">${fmt(x)}</span>`;
+  html += '</div>';
+  return `<div class="matrix-display">${html}</div>`;
+}
+
+const h1_pre = addBias(matmul(X, W1), b1);
+const h1 = relu(h1_pre);
+const scores = addBias(matmul(h1, W2), b2);
+const probs = softmax(scores);
+const loss = -(Math.log(probs[0][y[0]]) + Math.log(probs[1][y[1]])) / 2;
+
+const dscores = probs.map((r,i) => r.map((v,j) => (v - (j === y[i] ? 1 : 0)) / 2));
+const dW2 = matmul(transpose(h1), dscores);
+const db2 = colSum(dscores);
+const dh1 = matmul(dscores, transpose(W2));
+const dh1_pre = hadamard(dh1, reluMask(h1_pre));
+const dW1 = matmul(transpose(X), dh1_pre);
+const db1 = colSum(dh1_pre);
+const dX = matmul(dh1_pre, transpose(W1));
+
+const steps = [
+  { title: '起点：输入数据', arch: 0,
+    info: '输入是 2 个样本、4 个特征的 mini-batch。我们要预测类别 y = [1, 0]（两个样本分别属于第1类和第0类）。',
+    display: () => renderMat('X (输入)', X) + renderVec('y (标签)', y) },
+  { title: 'Forward · 第一层 Linear', arch: 1,
+    info: '计算 h1_pre = X @ W1 + b1。形状变化：(2,4) @ (4,3) + (3,) = (2,3)。这就是你在 Linear.forward 里写的 x_reshape @ w + b。',
+    display: () => renderMat('W1', W1) + renderVec('b1', b1) + renderMat('h1_pre = X @ W1 + b1', h1_pre) },
+  { title: 'Forward · ReLU 激活', arch: 2,
+    info: 'ReLU 把负数变 0，正数保留。注意哪些位置被"截断"——这些位置在 backward 时梯度会被归零。cache 存的就是 h1_pre，供 backward 判断哪里 > 0。',
+    display: () => renderMat('h1_pre (输入 ReLU)', h1_pre) + renderMat('h1 = max(0, h1_pre)', h1) },
+  { title: 'Forward · 第二层 Linear', arch: 3,
+    info: '再过一层 Linear 得到 scores。形状 (2,3) @ (3,2) + (2,) = (2,2)——每行是一个样本对 2 个类别的原始分数。',
+    display: () => renderMat('h1', h1) + renderMat('W2', W2) + renderVec('b2', b2) + renderMat('scores', scores) },
+  { title: 'Forward · Softmax + 交叉熵 loss', arch: 4,
+    info: 'Softmax 把 scores 变成概率，交叉熵 loss = -log(正确类别的概率)，对 batch 求平均。这是一个标量——整个训练的"北极星"。',
+    display: () => renderMat('scores', scores) + renderMat('probs = softmax(scores)', probs) +
+      `<div class="matrix-display"><div class="matrix-label">loss (标量)</div><div style="font: 500 16px var(--font-mono); padding: 4px;">${loss.toFixed(4)}</div></div>` },
+  { title: 'Backward · 起点 dscores', arch: 4,
+    info: 'Backward 的起点！对 softmax + cross-entropy 的组合，梯度有一个极其简洁的形式：dscores = (probs - one_hot(y)) / N。这就是为什么大家把这两个操作合并实现。',
+    display: () => renderMat('probs', probs) + renderVec('y', y) + renderMat('dscores = (probs - one_hot(y)) / N', dscores) },
+  { title: 'Backward · 穿过第二层 Linear', arch: 3,
+    info: '对 Linear 层，三个梯度公式都在这里：<br>dW2 = h1.T @ dscores（形状 (3,2) ✓）<br>db2 = dscores.sum(axis=0)（形状 (2,) ✓）<br>dh1 = dscores @ W2.T（形状 (2,3) ✓）<br>注意 shape 匹配是最好的 debug 工具！',
+    display: () => renderMat('dh1 = dscores @ W2.T', dh1) + renderMat('dW2 = h1.T @ dscores', dW2) + renderVec('db2 = sum(dscores, axis=0)', db2) },
+  { title: 'Backward · 穿过 ReLU', arch: 2,
+    info: 'ReLU 的 backward 超级简单：dh1_pre = dh1 * (h1_pre > 0)。前向时被截断的位置（h1_pre ≤ 0），梯度也变 0——这就是所谓的"死神经元"风险。',
+    display: () => renderMat('dh1 (上游梯度)', dh1) + renderMat('mask = (h1_pre > 0)', reluMask(h1_pre)) + renderMat('dh1_pre = dh1 * mask', dh1_pre) },
+  { title: 'Backward · 穿过第一层 Linear', arch: 1,
+    info: '又是 Linear，公式和第二层完全一样：dW1 = X.T @ dh1_pre, db1 = dh1_pre.sum(axis=0), dX = dh1_pre @ W1.T。<br>这就是"模块化"的威力——同一个 backward 公式复用在所有 Linear 层。',
+    display: () => renderMat('dX', dX) + renderMat('dW1 = X.T @ dh1_pre', dW1) + renderVec('db1', db1) },
+  { title: '汇总：grads 字典', arch: 0,
+    info: '把所有参数的梯度打包成字典返回给 Solver。Solver 收到后会调用 update_rule（比如 sgd）用这些梯度更新 W1, b1, W2, b2。一个完整的训练迭代就结束了，下一轮继续！',
+    display: () => renderMat('grads["W1"]', dW1) + renderVec('grads["b1"]', db1) + renderMat('grads["W2"]', dW2) + renderVec('grads["b2"]', db2) }
+];
+
+let traceStep = 0;
+function renderTrace() {
+  const s = steps[traceStep];
+  document.querySelectorAll('#arch-display .arch-node').forEach((n, i) => n.classList.toggle('current', i === s.arch));
+  document.getElementById('step-label').textContent = `步骤 ${traceStep} / ${steps.length - 1}`;
+  document.getElementById('step-info').innerHTML = `<strong>${s.title}</strong><br>${s.info}`;
+  document.getElementById('matrix-area').innerHTML = s.display();
+  document.getElementById('trace-prev').disabled = traceStep === 0;
+  document.getElementById('trace-next').disabled = traceStep === steps.length - 1;
+}
+document.getElementById('trace-next').onclick = () => { if (traceStep < steps.length - 1) { traceStep++; renderTrace(); } };
+document.getElementById('trace-prev').onclick = () => { if (traceStep > 0) { traceStep--; renderTrace(); } };
+document.getElementById('trace-reset').onclick = () => { traceStep = 0; renderTrace(); };
+renderTrace();
+
+function updateHparam() {
+  const ws = Math.pow(10, parseFloat(document.getElementById('ws-slider').value));
+  const lr = Math.pow(10, parseFloat(document.getElementById('lr-slider').value));
+  const L = parseInt(document.getElementById('depth-slider').value);
+  document.getElementById('ws-value').textContent = ws.toExponential(2);
+  document.getElementById('lr-value').textContent = lr.toExponential(2);
+  document.getElementById('depth-value').textContent = L + ' 层';
+
+  const D_in = 3072, D_hidden = 256;
+  const act1_std = Math.sqrt(D_in) * 1.0 * ws;
+  const actL_std = act1_std * Math.pow(Math.sqrt(D_hidden) * ws, L - 1);
+  const C = 10;
+  let initLoss;
+  if (actL_std < 0.01) initLoss = Math.log(C);
+  else if (actL_std > 100) initLoss = Math.log(C) + actL_std * 0.1;
+  else initLoss = Math.log(C) * (1 + Math.min(1, actL_std / 3));
+  const gradMag = ws * lr * actL_std;
+
+  const act1El = document.getElementById('act1-val');
+  act1El.textContent = act1_std.toExponential(2);
+  act1El.className = 'stat-value ' + (act1_std < 0.01 ? 'bad' : act1_std > 10 ? 'bad' : act1_std < 0.1 ? 'warn' : 'good');
+
+  const actLEl = document.getElementById('actL-val');
+  actLEl.textContent = actL_std.toExponential(2);
+  actLEl.className = 'stat-value ' + (actL_std < 0.001 ? 'bad' : actL_std > 100 ? 'bad' : actL_std < 0.05 ? 'warn' : actL_std > 10 ? 'warn' : 'good');
+
+  document.getElementById('loss-val').textContent = initLoss.toFixed(2);
+  document.getElementById('grad-val').textContent = gradMag.toExponential(2);
+
+  let advice = '';
+  if (actL_std < 0.001) advice = '⚠ 激活值在深层几乎消失（梯度消失）。loss 会很快卡住不动。建议：增大 weight_scale，或使用 Xavier/Kaiming 初始化。';
+  else if (actL_std > 100) advice = '⚠ 激活值爆炸！loss 大概率变 NaN。建议：减小 weight_scale。';
+  else if (gradMag > 0.5) advice = '⚠ 梯度太大，训练会剧烈震荡。建议：减小 learning_rate。';
+  else if (gradMag < 1e-6) advice = '⚠ 梯度太小，训练会非常缓慢。建议：增大 learning_rate 或 weight_scale。';
+  else advice = '✓ 参数组合比较健康——激活值在合理范围，梯度量级适中，loss 接近理论值 ln(10) ≈ 2.30。';
+  document.getElementById('hparam-advice').innerHTML = advice;
+
+  const pts = [];
+  const healthScore = Math.exp(-Math.abs(Math.log10(Math.max(actL_std, 1e-10)) - 0));
+  for (let i = 0; i < 100; i++) {
+    let v;
+    if (actL_std < 0.001) v = initLoss - 0.003 * i + (Math.random() - 0.5) * 0.02;
+    else if (actL_std > 100 || gradMag > 1) v = i < 30 ? initLoss + i * 0.2 : NaN;
+    else v = initLoss * Math.exp(-i / (30 / Math.max(healthScore, 0.1))) + 0.1 + (Math.random() - 0.5) * (gradMag > 0.3 ? 0.3 : 0.03);
+    pts.push(v);
+  }
+  if (window.__lossChart) window.__lossChart.destroy();
+  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  window.__lossChart = new Chart(document.getElementById('loss-curve-chart'), {
+    type: 'line',
+    data: { labels: Array.from({length: 100}, (_,i) => i), datasets: [{ label: 'loss', data: pts, borderColor: '#378ADD', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderWidth: 1.5 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: isDark ? '#9c9a92' : '#73726c', font: { size: 11 } }, grid: { color: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }, title: { display: true, text: '迭代次数', color: isDark ? '#9c9a92' : '#73726c', font: { size: 11 } } },
+        y: { ticks: { color: isDark ? '#9c9a92' : '#73726c', font: { size: 11 } }, grid: { color: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }, min: 0, max: 5, title: { display: true, text: 'loss', color: isDark ? '#9c9a92' : '#73726c', font: { size: 11 } } }
+      }
+    }
+  });
+}
+['ws-slider', 'lr-slider', 'depth-slider'].forEach(id => document.getElementById(id).addEventListener('input', updateHparam));
+
+const quizzes = [
+  {
+    curve: (n) => Array.from({length: n}, (_,i) => 2.30 - 0.001 * i + (Math.random() - 0.5) * 0.015),
+    prompt: 'loss 从 2.30 开始，几乎完全不下降，训练了 300 个迭代还是卡在 2.28 附近。最可能的原因是什么？',
+    choices: [
+      { text: '学习率太大，梯度被放大到震荡', correct: false, why: '如果学习率太大，loss 会震荡甚至发散，不会是平坦的。' },
+      { text: '学习率太小，或 weight_scale 太小导致梯度太弱', correct: true, why: '正解！loss 纹丝不动说明每次更新的步子几乎为零。原因可能是 lr 太小，或 weight_scale 太小让初始化时的激活和梯度都接近 0。' },
+      { text: '模型过拟合', correct: false, why: '过拟合的症状是 train loss 很低但 val loss 升高。这里 loss 本身就下不去，连训练集都学不会。' },
+      { text: '数据有 bug', correct: false, why: '有可能但不是首要怀疑——当 loss 持平在 ln(C) 附近时，优先怀疑优化问题。' }
+    ]
+  },
+  {
+    curve: (n) => Array.from({length: n}, (_,i) => { if (i < 20) return 2.30 + i * 0.15; if (i < 35) return 5.5 + (i-20) * 1.2; return NaN; }),
+    prompt: 'loss 从 2.30 开始急速上升，30 步后变成 NaN。你会怎么修？',
+    choices: [
+      { text: '增大 batch_size', correct: false, why: 'batch size 不是这里的主要问题。NaN 是数值爆炸，不是 noise 问题。' },
+      { text: '减小 learning_rate 10-100 倍，同时检查 weight_scale 是否过大', correct: true, why: '正解！loss 爆炸到 NaN 是典型的"步子太大"或"初始化太大"问题。减小 lr 是第一反应，同时检查 weight_scale。' },
+      { text: '添加更多 dropout', correct: false, why: 'dropout 是解决过拟合的，不解决 NaN 爆炸问题。' },
+      { text: '训练更多 epoch', correct: false, why: '已经 NaN 了，训练再久也救不回来——浮点 NaN 会一直传播。' }
+    ]
+  },
+  {
+    curve: (n) => { const tr = Array.from({length: n}, (_,i) => 2.30 * Math.exp(-i/25) + 0.03 + (Math.random()-0.5)*0.02); const va = Array.from({length: n}, (_,i) => i < 40 ? 2.30 * Math.exp(-i/30) + 0.3 + (Math.random()-0.5)*0.04 : 0.55 + (i-40)*0.008 + (Math.random()-0.5)*0.05); return {tr, va}; },
+    prompt: 'train loss 降到接近 0，但 val loss 先降后升。这是什么情况？',
+    choices: [
+      { text: '欠拟合，需要更大的模型', correct: false, why: '欠拟合是 train loss 也降不下去。这里 train loss 降到 0 说明模型容量足够，问题是泛化。' },
+      { text: '过拟合，需要增加正则化或早停', correct: true, why: '正解！这是最经典的过拟合曲线。处方：增加 reg（L2）、加 dropout、减小模型容量、做 early stopping。' },
+      { text: '学习率太大', correct: false, why: 'lr 太大会让 loss 震荡，而不是 train loss 稳定下降、val loss 缓慢上升。' },
+      { text: '数据泄露（test data leaked into train）', correct: false, why: '数据泄露通常导致 val 看起来和 train 一样好——不会出现 val 反向上升。' }
+    ],
+    hasVal: true
+  },
+  {
+    curve: (n) => Array.from({length: n}, (_,i) => 2.30 * Math.exp(-i/200) + 0.8 + (Math.random()-0.5)*0.015),
+    prompt: 'loss 在缓慢稳定下降，200 步后才降到 1.0。虽然稳定但效率太低。怎么加速？',
+    choices: [
+      { text: '调大 learning_rate，比如 2-5 倍', correct: true, why: '正解！稳定但缓慢下降通常意味着 lr 偏小但安全。可以大胆调大，只要不出现震荡就行。这就是"先用大 lr，出问题再回退"的调参策略。' },
+      { text: '换成更大的模型', correct: false, why: '不是容量问题——loss 在降说明模型在学，只是学得慢。' },
+      { text: '增加 dropout', correct: false, why: 'dropout 会让训练更慢，而且还没到过拟合阶段。' },
+      { text: '重新初始化', correct: false, why: '没必要——当前初始化看起来工作正常，只是 lr 保守了。' }
+    ]
+  },
+  {
+    curve: (n) => Array.from({length: n}, (_,i) => 1.2 + 0.8 * Math.exp(-i/100) + Math.sin(i/2.5) * 0.5 * Math.exp(-i/150) + (Math.random()-0.5)*0.3),
+    prompt: 'loss 剧烈震荡，每个 mini-batch 的 loss 跳动很大，但整体趋势缓慢下降。这说明什么？',
+    choices: [
+      { text: '学习率偏大，每步都在"跨越"最优点附近震荡', correct: true, why: '正解！大幅震荡 = 步子太大。解决方案：减小 lr（首选），或者加 momentum/用 Adam 来"平滑"更新，或者使用 lr_decay 在后期减小步长。' },
+      { text: '模型容量不够', correct: false, why: '容量不够的表现是训练不动，不是震荡。' },
+      { text: 'batch size 太大', correct: false, why: '大 batch 会让 loss 更稳定，不是震荡的原因。小 batch 才会引入 noise，但也不会这么剧烈。' },
+      { text: '数据没有 shuffle', correct: false, why: '没 shuffle 会有周期性的 pattern，但不会有这种高频震荡。' }
+    ]
+  }
+];
+
+let quizIdx = 0, quizScore = 0;
+function renderQuiz(idx) {
+  const q = quizzes[idx];
+  document.getElementById('q-num').textContent = idx + 1;
+  document.getElementById('q-score').textContent = quizScore;
+  document.getElementById('q-prompt').textContent = q.prompt;
+  const choicesEl = document.getElementById('q-choices');
+  choicesEl.innerHTML = '';
+  q.choices.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-choice';
+    btn.textContent = c.text;
+    btn.onclick = () => answerQuiz(i);
+    choicesEl.appendChild(btn);
+  });
+  document.getElementById('q-feedback').classList.remove('show');
+  document.getElementById('q-next').style.display = 'none';
+  document.getElementById('q-restart').style.display = 'none';
+
+  if (window.__quizChart) window.__quizChart.destroy();
+  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  let datasets;
+  if (q.hasVal) {
+    const {tr, va} = q.curve(100);
+    datasets = [
+      { label: 'train', data: tr, borderColor: '#378ADD', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderWidth: 1.5 },
+      { label: 'val', data: va, borderColor: '#E24B4A', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderWidth: 1.5, borderDash: [4,4] }
+    ];
+  } else {
+    datasets = [{ label: 'loss', data: q.curve(100), borderColor: '#378ADD', backgroundColor: 'transparent', tension: 0.3, pointRadius: 0, borderWidth: 1.5 }];
+  }
+  window.__quizChart = new Chart(document.getElementById('quiz-chart'), {
+    type: 'line',
+    data: { labels: Array.from({length: 100}, (_,i) => i), datasets },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: q.hasVal, labels: { color: isDark ? '#9c9a92' : '#73726c', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: isDark ? '#9c9a92' : '#73726c', font: { size: 10 } }, grid: { color: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' } },
+        y: { ticks: { color: isDark ? '#9c9a92' : '#73726c', font: { size: 10 } }, grid: { color: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }, min: 0, max: idx === 1 ? 30 : 3 }
+      }
+    }
+  });
+}
+function answerQuiz(i) {
+  const q = quizzes[quizIdx];
+  const choicesEl = document.getElementById('q-choices');
+  Array.from(choicesEl.children).forEach((c, j) => {
+    c.disabled = true;
+    if (q.choices[j].correct) c.classList.add('correct');
+    else if (j === i) c.classList.add('wrong');
+  });
+  if (q.choices[i].correct) quizScore++;
+  document.getElementById('q-score').textContent = quizScore;
+  const fb = document.getElementById('q-feedback');
+  fb.innerHTML = `<strong>${q.choices[i].correct ? '✓ 回答正确！' : '✗ 这道题答错了。'}</strong><br>${q.choices[i].why}`;
+  fb.style.background = q.choices[i].correct ? (matchMedia('(prefers-color-scheme: dark)').matches ? '#173404' : '#EAF3DE') : (matchMedia('(prefers-color-scheme: dark)').matches ? '#501313' : '#FCEBEB');
+  fb.style.color = q.choices[i].correct ? (matchMedia('(prefers-color-scheme: dark)').matches ? '#C0DD97' : '#27500A') : (matchMedia('(prefers-color-scheme: dark)').matches ? '#F7C1C1' : '#791F1F');
+  fb.classList.add('show');
+  if (quizIdx < quizzes.length - 1) document.getElementById('q-next').style.display = 'inline-block';
+  else document.getElementById('q-restart').style.display = 'inline-block';
+}
+document.getElementById('q-next').onclick = () => { quizIdx++; renderQuiz(quizIdx); };
+document.getElementById('q-restart').onclick = () => { quizIdx = 0; quizScore = 0; renderQuiz(0); };
+
+const flashcards = [
+  { f: '模块化 API 的两个接口方法是什么？', b: '<code>forward(inputs) → (out, cache)</code> 和 <code>backward(dout, cache) → dinputs</code>。cache 是桥梁，存储 forward 时需要被 backward 使用的中间值。' },
+  { f: 'Linear 层的 backward 三个梯度公式', b: '<code>dx = dout @ W.T</code><br><code>dW = x.T @ dout</code><br><code>db = dout.sum(axis=0)</code><br>验证技巧：每个梯度的 shape 必须与原变量相同。' },
+  { f: 'ReLU 的 backward 是什么？', b: '<code>dx = dout * (x > 0)</code>。前向时为正的位置传回 dout，其他位置截断为 0。这也解释了"死神经元"问题。' },
+  { f: 'Softmax + CrossEntropy 合并后的梯度', b: '<code>dscores = (probs - one_hot(y)) / N</code>。这个极简形式是把两步合并求导的结果，也是工程上两者总是合并实现的原因。' },
+  { f: 'Softmax 公式', b: '<code>p_i = exp(s_i) / Σ exp(s_j)</code>。实际实现时先减最大值防止数值溢出：<code>exp(s_i - max(s))</code>。' },
+  { f: '交叉熵 loss 公式', b: '<code>L = -log(p_y)</code>，即正确类别概率的负对数。对 batch 取平均：<code>L = -(1/N) Σ log(p_{y_i})</code>。' },
+  { f: '为什么 CIFAR-10 的初始 loss 应该接近 2.30？', b: '2.30 = ln(10)。当 weights 初始化合理、scores 接近 0 时，softmax 输出接近均匀分布 1/10，-log(1/10) = ln(10) ≈ 2.30。远离此值说明初始化异常。' },
+  { f: 'weight_scale 控制什么？', b: '控制权重初始化的标准差。直接决定前向激活和反向梯度的量级。公式：<code>std(h) ≈ √D · std(x) · weight_scale</code>。对深层网络，层数越多影响越被放大。' },
+  { f: 'learning_rate 调大/调小的症状', b: '<strong>太大：</strong>loss 震荡、发散、变 NaN。<br><strong>太小：</strong>loss 不动或下降极慢。<br>注意 lr 和 weight_scale 是耦合的——两者共同决定每次更新的实际步长。' },
+  { f: 'L2 正则化公式', b: '<code>L_total = L_data + reg * Σ ||W||²</code>（不带 0.5 系数时）或 <code>0.5 * reg * Σ ||W||²</code>（带 0.5 系数时，便于梯度简化为 reg·W）。注意：只对 W 正则化，不对 b 正则化。' },
+  { f: 'SGD 更新公式', b: '<code>w ← w - lr · dw</code>。最简单也最基础，但对 lr 敏感，在深层网络或噪声大时收敛慢。' },
+  { f: 'SGD with Momentum 公式', b: '<code>v ← β·v + dw</code>，<code>w ← w - lr·v</code>。β 通常取 0.9。动量累积梯度方向，加速沿稳定方向的下降，抑制震荡。' },
+  { f: 'Adam 公式', b: '<code>m ← β₁·m + (1-β₁)·dw</code>（动量）<br><code>v ← β₂·v + (1-β₂)·dw²</code>（平方梯度的EMA）<br>带 bias correction 后：<code>w ← w - lr · m̂ / (√v̂ + ε)</code>。自适应调整每个参数的有效学习率。' },
+  { f: '过拟合的典型症状', b: 'train acc 很高（可能接近 100%），val acc 显著低于 train acc。对策：加 L2 正则、加 Dropout、减模型容量、数据增强、early stopping。' },
+  { f: 'Dropout 的 train 和 test 行为差异', b: '<strong>Train：</strong>以概率 p 随机置零神经元，剩下的除以 (1-p)（inverted dropout）。<br><strong>Test：</strong>直接传递输入，不做任何操作。这就是为什么 model 需要 train/test mode。' },
+  { f: '卷积 forward 公式的核心', b: '<code>out[n,f,i,j] = Σ x_pad[n,:,i·s+p,j·s+q] · w[f,:,p,q] + b[f]</code>。输出尺寸：<code>H_out = (H_in + 2·pad - HH) / stride + 1</code>。' },
+  { f: '卷积 backward 的三个梯度', b: '<code>db</code> = dout 在除 F 外所有维度求和；<code>dw</code> = Σ (输入patch × 上游梯度)；<code>dx</code> = Σ (filter权重 × 上游梯度)，需要 += 累加（一个输入像素可能被多个输出位置用到）。' },
+  { f: '一个训练迭代包含哪些步骤？', b: '1. 取 batch<br>2. Forward → scores<br>3. 计算 loss<br>4. Backward → grads<br>5. update_rule(w, dw) 更新参数<br>6. 重复直到 num_iterations 结束' },
+  { f: 'Solver 对 model 的 API 要求', b: '1. <code>model.params</code> 是字典（参数名 → tensor）<br>2. <code>model.loss(X, y)</code> 返回：y=None 时返回 scores；y 给定时返回 (loss, grads)<br>这两个接口就够了，Solver 不关心内部架构。' },
+  { f: 'Gradient Check 是什么？', b: '用数值近似验证解析梯度。对参数 w 的每个元素加减微小 ε，看 loss 变化多少：<code>grad_num ≈ (L(w+ε) - L(w-ε)) / (2ε)</code>。如果相对误差 < 1e-5 基本正确。写新 backward 时必做！' },
+  { f: 'Batch Normalization 核心思想', b: '对每一层的输入做归一化：减均值除标准差，再用可学习的 γ、β 做仿射变换。效果：加速训练、允许更大 lr、缓解内部协变量偏移、有轻微正则化作用。训练时用 batch 统计量，测试时用 running average。' }
+];
+
+const deckEl = document.getElementById('flashcards');
+flashcards.forEach((card, i) => {
+  const div = document.createElement('div');
+  div.className = 'flashcard';
+  div.innerHTML = `<div class="front">${i+1}. ${card.f}</div><div class="back">${card.b}</div>`;
+  div.onclick = () => div.classList.toggle('revealed');
+  deckEl.appendChild(div);
+});
+</script>
