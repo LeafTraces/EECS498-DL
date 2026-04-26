@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecture 17: Attention — 深度讲解与工程实现</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #faf9f6;
+      --text: #1a1a2e;
+      --accent: #2563eb;
+      --accent-light: #dbeafe;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --orange: #d97706;
+      --orange-light: #fef3c7;
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --border: #e5e7eb;
+      --code-bg: #1e293b;
+      --card-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+      --card-shadow-lg: 0 4px 16px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.06);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Noto Sans SC', 'Source Serif 4', serif;
+      background: var(--bg); color: var(--text); line-height: 1.8; font-size: 16px;
+    }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 24px 100px; }
+    .header {
+      text-align: center; padding: 60px 0 40px; border-bottom: 2px solid var(--text); margin-bottom: 48px;
+    }
+    .header .tag {
+      display: inline-block; background: var(--text); color: var(--bg);
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 2px;
+      text-transform: uppercase; padding: 4px 12px; margin-bottom: 16px;
+    }
+    .header h1 {
+      font-family: 'Source Serif 4', serif; font-size: 2.4em; font-weight: 700; line-height: 1.2; margin-bottom: 12px;
+    }
+    .header .subtitle { font-size: 1.05em; color: #666; font-style: italic; }
+    .toc {
+      background: white; border: 1px solid var(--border); border-radius: 8px; padding: 24px 28px;
+      margin-bottom: 48px; box-shadow: var(--card-shadow);
+    }
+    .toc h2 {
+      font-size: .85em; text-transform: uppercase; letter-spacing: 2px; color: #999; margin-bottom: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .toc ol { padding-left: 20px; columns: 2; column-gap: 32px; }
+    .toc li { font-size: .92em; margin-bottom: 4px; break-inside: avoid; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .section { margin-bottom: 56px; }
+    .section-num {
+      font-family: 'JetBrains Mono', monospace; font-size: .8em; color: var(--accent); letter-spacing: 1px;
+    }
+    h2.section-title {
+      font-family: 'Source Serif 4', serif; font-size: 1.7em; font-weight: 700; margin: 4px 0 8px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+    .slide-ref { font-family: 'JetBrains Mono', monospace; font-size: .78em; color: #999; margin-bottom: 16px; display: block; }
+    h3 { font-size: 1.15em; font-weight: 700; margin: 28px 0 10px; color: var(--text); }
+    h4 { font-size: 1.02em; font-weight: 700; margin: 20px 0 8px; color: #333; }
+    p { margin-bottom: 14px; }
+    .callout {
+      border-left: 4px solid; padding: 14px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; font-size: .95em;
+    }
+    .callout-key { border-color: var(--accent); background: var(--accent-light); }
+    .callout-why { border-color: var(--green); background: var(--green-light); }
+    .callout-warn { border-color: var(--red); background: var(--red-light); }
+    .callout-tip { border-color: var(--orange); background: var(--orange-light); }
+    .callout-insight { border-color: var(--purple); background: var(--purple-light); }
+    .callout-teal { border-color: var(--teal); background: var(--teal-light); }
+    .callout-label {
+      font-weight: 700; font-size: .85em; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;
+    }
+    .callout-key .callout-label { color: var(--accent); }
+    .callout-why .callout-label { color: var(--green); }
+    .callout-warn .callout-label { color: var(--red); }
+    .callout-tip .callout-label { color: var(--orange); }
+    .callout-insight .callout-label { color: var(--purple); }
+    .callout-teal .callout-label { color: var(--teal); }
+    pre {
+      background: var(--code-bg); color: #e2e8f0; padding: 18px 20px; border-radius: 8px; overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace; font-size: .84em; line-height: 1.65; margin: 16px 0;
+    }
+    pre code { background: none; padding: 0; color: #e2e8f0; }
+    code {
+      font-family: 'JetBrains Mono', monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 3px; font-size: .88em;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .92em; }
+    th,td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: #f8fafc; font-weight: 700; font-size: .85em; text-transform: uppercase; letter-spacing: .5px; }
+    .diagram {
+      background: white; border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin: 20px 0;
+      text-align: center; box-shadow: var(--card-shadow);
+    }
+    .diagram-caption { font-size: .85em; color: #666; margin-top: 10px; font-style: italic; }
+    .flow { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: .82em; }
+    .flow-box { padding: 7px 12px; border-radius: 6px; border: 2px solid; font-weight: 500; }
+    .flow-arrow { color: #999; font-size: 1.2em; }
+    .fb-input { background: #fef2f2; border-color: #fca5a5; }
+    .fb-rnn { background: #dbeafe; border-color: #93c5fd; }
+    .fb-state { background: #d1fae5; border-color: #6ee7b7; }
+    .fb-out { background: #fef3c7; border-color: #fcd34d; }
+    .fb-attn { background: #ede9fe; border-color: #c4b5fd; }
+    .fb-fc { background: #f3f4f6; border-color: #9ca3af; }
+    .versus { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+    .versus>div { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; box-shadow: var(--card-shadow); }
+    .math-block {
+      text-align: center; padding: 16px 0; font-size: 1.05em; font-family: 'Source Serif 4', serif; font-style: italic;
+      background: white; border: 1px solid var(--border); border-radius: 6px; margin: 16px 0; box-shadow: var(--card-shadow); overflow-x: auto;
+    }
+    .highlight { background: linear-gradient(transparent 60%, #fef08a 60%); padding: 0 2px; }
+    strong { font-weight: 700; }
+    em { font-style: italic; }
+    ul { margin: 8px 0 14px 20px; }
+    ul li { margin-bottom: 4px; }
+    ol { margin: 8px 0 14px 20px; }
+    ol li { margin-bottom: 6px; }
+    .pill { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: .75em; padding: 2px 8px; border-radius: 12px; margin: 0 2px; font-weight: 500; }
+    .pill-red { background: var(--red-light); color: var(--red); }
+    .pill-green { background: var(--green-light); color: var(--green); }
+    .pill-blue { background: var(--accent-light); color: var(--accent); }
+    .pill-purple { background: var(--purple-light); color: var(--purple); }
+    .pill-teal { background: var(--teal-light); color: var(--teal); }
+    @media(max-width:600px) {
+      .header h1 { font-size: 1.7em; }
+      .toc ol { columns: 1; }
+      .container { padding: 24px 16px 80px; }
+      .versus { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ====== HEADER ====== -->
+  <div class="header">
+    <div class="tag">EECS 498.008 / 598.008 &bull; TA 深度讲解</div>
+    <h1>Lecture 17: Attention</h1>
+    <div class="subtitle">Justin Johnson &mdash; March 21, 2022 &mdash; 123 slides &mdash; 从信息瓶颈到 Transformer 崛起</div>
+  </div>
+
+  <!-- ====== TOC ====== -->
+  <nav class="toc">
+    <h2>目录 Contents</h2>
+    <ol>
+      <li><a href="#s1">全局定位：从 RNN 到 Attention 的进化</a></li>
+      <li><a href="#s2">Seq2Seq 的信息瓶颈</a></li>
+      <li><a href="#s3">Bahdanau Attention：动态对齐</a></li>
+      <li><a href="#s4">Attention 的本质：Query-Key-Value</a></li>
+      <li><a href="#s5">缩放点积注意力（Scaled Dot-Product）</a></li>
+      <li><a href="#s6">自注意力（Self-Attention）与排列不变性</a></li>
+      <li><a href="#s7">Masked Self-Attention 与自回归生成</a></li>
+      <li><a href="#s8">多头自注意力（Multi-Head Self-Attention）</a></li>
+      <li><a href="#s9">Transformer 架构详解</a></li>
+      <li><a href="#s10">序列建模三范式对比与 Transformer 的可扩展性</a></li>
+      <li><a href="#s11">预训练与微调：NLP 的 ImageNet Moment</a></li>
+      <li><a href="#s12">工程实现：从零搭建 Attention 模块</a></li>
+    </ol>
+  </nav>
+
+  <!-- ====== SECTION 1 ====== -->
+  <div class="section" id="s1">
+    <span class="section-num">PART 01</span>
+    <h2 class="section-title">全局定位：从 RNN 到 Attention 的进化</h2>
+    <span class="slide-ref">对应 Slides 4–11</span>
+
+    <p>在 Lecture 16 中我们掌握了 RNN 及其变体（LSTM/GRU），它们通过隐藏状态逐步阅读序列，但<strong>始终将所有历史信息压缩进一个固定长度的向量</strong>。当序列变长（如 T=1000），这个 <strong>“信息瓶颈”</strong> 会导致严重的信息丢失与梯度问题。</p>
+
+    <div class="callout callout-key">
+      <span class="callout-label">Lecture 16 → Lecture 17 的知识跃迁</span>
+      <strong>RNN 的核心矛盾</strong>：我们必须把整个输入序列放进一个上下文向量 c（通常 c = h<sub>T</sub>），然后解码器只能看着这一个向量生成整个输出。<br/>
+      <strong>Attention 的解决方案</strong>：让解码器在<strong>每一个时间步</strong>都能“回头看”编码器的<strong>所有隐藏状态</strong>，并决定关注哪些部分。<br/>
+      从 <em>“压缩所有信息到一个向量”</em> 变为 <em>“按需检索输入的不同位置”</em> —— 这是本课最核心的思维转变。
+    </div>
+  </div>
+
+  <!-- ====== SECTION 2 ====== -->
+  <div class="section" id="s2">
+    <span class="section-num">PART 02</span>
+    <h2 class="section-title">Seq2Seq 的信息瓶颈：Attention 的诞生动机</h2>
+    <span class="slide-ref">对应 Slides 5–12</span>
+
+    <div class="diagram">
+      <div class="flow" style="flex-direction:column;gap:10px;font-size:.78em;">
+        <div style="display:flex;gap:4px;align-items:center;justify-content:center;">
+          <span class="flow-box fb-input">x<sub>1</sub></span><span class="flow-arrow">→</span>
+          <span class="flow-box fb-rnn">h<sub>1</sub></span><span class="flow-arrow">→</span>
+          <span class="flow-box fb-rnn">h<sub>2</sub></span><span class="flow-arrow">→</span>
+          <span class="flow-box fb-rnn">h<sub>3</sub></span><span class="flow-arrow">→</span>
+          <span class="flow-box fb-rnn">h<sub>4</sub></span>
+        </div>
+        <span class="flow-arrow" style="font-size:1.5em;">↓</span>
+        <span class="flow-box fb-state" style="border-width:3px;">c = h<sub>T</sub></span>
+        <span class="flow-arrow" style="font-size:1.5em;">↓</span>
+        <div style="display:flex;gap:4px;align-items:center;justify-content:center;">
+          <span class="flow-box fb-out">y<sub>1</sub></span><span class="flow-arrow">←</span>
+          <span class="flow-box fb-rnn">s<sub>1</sub>(c)</span><span class="flow-arrow">←</span>
+          <span class="flow-box fb-out">y<sub>2</sub></span><span class="flow-arrow">←</span>
+          <span class="flow-box fb-rnn">s<sub>2</sub>(c)</span>
+        </div>
+      </div>
+      <div class="diagram-caption">传统 Seq2Seq：整个输入被压缩为一个上下文向量 c，解码器每个时间步都只能“盲看”这一个向量。</div>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-label">瓶颈的量化理解</span>
+      当 T = 1000 时，h<sub>T</sub> 的维度可能只有 512 或 1024。这意味着我们要用<strong>几百个浮点数</strong>去概括一部小说或一篇长文档的全部语义。<br/>
+      信息论上，这必然导致早期时间步的信息被“遗忘”或“扭曲”——即使 LSTM 也无法完全解决，因为固定大小的向量最终会饱和。
+    </div>
+  </div>
+
+  <!-- ====== SECTION 3 ====== -->
+  <div class="section" id="s3">
+    <span class="section-num">PART 03</span>
+    <h2 class="section-title">Bahdanau Attention：动态对齐</h2>
+    <span class="slide-ref">对应 Slides 13–24</span>
+
+    <p>Bahdanau et al. (ICLR 2015) 提出了<strong>第一个实用的 Attention 机制</strong>。核心思想：在解码器的每个时间步 t，计算一个<strong>新的上下文向量 c<sub>t</sub></strong>，它是编码器所有隐藏状态 h<sub>i</sub> 的<strong>加权和</strong>。</p>
+
+    <div class="math-block">
+      <strong>对齐分数</strong>：e<sub>t,i</sub> = f<sub>att</sub>(s<sub>t−1</sub>, h<sub>i</sub>) &nbsp;&nbsp; (f<sub>att</sub> 是一个 MLP)<br>
+      <strong>注意力权重</strong>：a<sub>t,i</sub> = softmax(e<sub>t,:</sub>)<sub>i</sub> &nbsp;&nbsp; (0 &lt; a<sub>t,i</sub> &lt; 1, Σ a<sub>t,i</sub> = 1)<br>
+      <strong>上下文向量</strong>：c<sub>t</sub> = Σ<sub>i</sub> a<sub>t,i</sub> h<sub>i</sub><br>
+      <strong>解码器状态更新</strong>：s<sub>t</sub> = g<sub>U</sub>(y<sub>t−1</sub>, s<sub>t−1</sub>, c<sub>t</sub>)
+    </div>
+
+    <div class="callout callout-why">
+      <span class="callout-label">一切都是可微的！</span>
+      我们<strong>不直接监督注意力权重 a<sub>t,i</sub></strong> —— 模型通过梯度下降自己学会“对齐”。梯度可以流畅地从解码器损失流回对齐网络 f<sub>att</sub> 再到编码器。这是端到端学习的典范。
+    </div>
+
+    <h3>可视化注意力权重（Slides 21–24）</h3>
+    <p>在英语→法语翻译中，注意力矩阵常呈<strong>对角线</strong>分布（词序对应），但也会自动发现<strong>语序差异</strong>（如形容词后置）和<strong>动词变位</strong>。</p>
+    <div class="callout callout-insight">
+      <span class="callout-label">Attention 不关心顺序</span>
+      解码器将编码器的隐藏状态视为<strong>无序集合 {h<sub>i</sub>}</strong>，仅通过相似度来“检索”。这一特性为后续的 Self-Attention 和 Transformer 铺平了道路。
+    </div>
+  </div>
+
+  <!-- ====== SECTION 4 ====== -->
+  <div class="section" id="s4">
+    <span class="section-num">PART 04</span>
+    <h2 class="section-title">Attention 的一般形式：Query-Key-Value</h2>
+    <span class="slide-ref">对应 Slides 44–51</span>
+
+    <p>我们可以将 Attention 抽象为一个通用的<strong>软检索</strong>操作：给定一个<strong>查询 q</strong>，在一组<strong>键值对 (k<sub>i</sub>, v<sub>i</sub>)</strong> 中，根据查询与键的相似度，加权聚合值向量。</p>
+
+    <div class="diagram">
+      <div class="flow" style="flex-direction:column;gap:10px;font-size:.82em;">
+        <div>
+          <span class="flow-box fb-attn">Query q</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-box fb-out">similarity(q, k<sub>i</sub>)</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-box fb-state">softmax</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-box fb-out">weights a<sub>i</sub></span>
+        </div>
+        <span class="flow-arrow" style="font-size:1.5em;">↓</span>
+        <div>
+          <span class="flow-box fb-out">Output y = Σ a<sub>i</sub> v<sub>i</sub></span>
+        </div>
+      </div>
+    </div>
+
+    <table>
+      <tr><th>Bahdanau Attention</th><th>通用 Attention (QKV)</th></tr>
+      <tr>
+        <td>Query = s<sub>t−1</sub></td>
+        <td>可学习查询矩阵 W<sub>Q</sub></td>
+      </tr>
+      <tr>
+        <td>Keys = h<sub>i</sub>（直接用）</td>
+        <td>Keys = XW<sub>K</sub>（输入通过 Key 投影）</td>
+      </tr>
+      <tr>
+        <td>Values = h<sub>i</sub>（直接用）</td>
+        <td>Values = XW<sub>V</sub>（输入通过 Value 投影）</td>
+      </tr>
+      <tr>
+        <td>相似度 = MLP(s<sub>t−1</sub>, h<sub>i</sub>)</td>
+        <td>相似度 = 点积 / 缩放点积</td>
+      </tr>
+    </table>
+
+    <h3>为什么要分离 Key 和 Value？</h3>
+    <p>Key 负责<strong>计算相似度</strong>，Value 负责<strong>提供聚合内容</strong>。这允许模型使用不同特征空间分别优化“如何匹配”和“匹配后取什么信息”。在实践中，W<sub>K</sub> 和 W<sub>V</sub> 独立学习，极大地提升了灵活性。</p>
+  </div>
+
+  <!-- ====== SECTION 5 ====== -->
+  <div class="section" id="s5">
+    <span class="section-num">PART 05</span>
+    <h2 class="section-title">缩放点积注意力（Scaled Dot-Product Attention）</h2>
+    <span class="slide-ref">对应 Slides 45–48</span>
+
+    <div class="math-block">
+      <strong>相似度</strong>：e<sub>i</sub> = (q · k<sub>i</sub>) / √d<sub>k</sub><br>
+      <strong>权重</strong>：a = softmax(e)<br>
+      <strong>输出</strong>：y = Σ a<sub>i</sub> v<sub>i</sub>
+    </div>
+
+    <div class="callout callout-why">
+      <span class="callout-label">为什么需要除以 √d<sub>k</sub> ？</span>
+      点积的期望值随维度 d<sub>k</sub> 增大而增大。较大的点积会导致 softmax 进入<strong>饱和区</strong>（梯度接近 0），训练极慢。<strong>除以 √d<sub>k</sub></strong> 保持方差为 1，保证 softmax 的平滑性。
+    </div>
+
+    <h3>批量矩阵运算</h3>
+    <p>若同时有 N<sub>Q</sub> 个查询和 N<sub>X</sub> 个输入向量，可一次性计算：</p>
+    <div class="math-block">
+      Q (N<sub>Q</sub> × d<sub>k</sub>), K = XW<sub>K</sub> (N<sub>X</sub> × d<sub>k</sub>), V = XW<sub>V</sub> (N<sub>X</sub> × d<sub>v</sub>)<br>
+      E = Q K<sup>T</sup> / √d<sub>k</sub> &nbsp;&nbsp; (N<sub>Q</sub> × N<sub>X</sub>)<br>
+      A = softmax(E, dim=1) &nbsp;&nbsp; (行方向 softmax)<br>
+      Y = A V &nbsp;&nbsp; (N<sub>Q</sub> × d<sub>v</sub>)
+    </div>
+    <p>这完全由<strong>矩阵乘法</strong>实现，可充分利用 GPU 并行性。</p>
+  </div>
+
+  <!-- ====== SECTION 6 ====== -->
+  <div class="section" id="s6">
+    <span class="section-num">PART 06</span>
+    <h2 class="section-title">自注意力（Self-Attention）与排列不变性</h2>
+    <span class="slide-ref">对应 Slides 56–70</span>
+
+    <p>在 Self-Attention 中，<strong>查询 Q、键 K 和值 V 都来自同一个输入序列 X</strong>。每个位置都去“关注”序列中所有其他位置（包括自己）。</p>
+
+    <div class="math-block">
+      Q = X W<sub>Q</sub>, &nbsp; K = X W<sub>K</sub>, &nbsp; V = X W<sub>V</sub><br>
+      Y<sub>i</sub> = Σ<sub>j</sub> softmax( Q<sub>i</sub> · K<sub>j</sub> / √d<sub>k</sub> )<sub>j</sub> V<sub>j</sub>
+    </div>
+
+    <h3>排列不变性（Permutation Invariance）</h3>
+    <p>Self-Attention 将输入视为<strong>集合</strong>而不是序列。如果你打乱输入向量的顺序，输出顺序也会相应打乱，但<strong>值不变</strong>。这意味着模型本身<strong>不知道词序</strong>！</p>
+
+    <div class="callout callout-warn">
+      <span class="callout-label">必须注入位置信息</span>
+      纯粹的 Self-Attention 无法区分“狗咬人”和“人咬狗”。要获得序列感知能力，必须添加<strong>位置编码（Positional Encoding）</strong> —— 无论是固定的正弦编码还是可学习的位置嵌入。<br/>
+      虽然 Justin 在本课 slides 仅一笔带过，但这正是 Transformer 的关键一步。
+    </div>
+
+    <h3>CNN with Self-Attention（Slides 82–87）</h3>
+    <p>Self-Attention 也可用于图像的<strong>像素/特征图</strong>。例如将 H×W 的特征图展平为 N<sub>X</sub> = H·W 个向量，让每个位置关注所有位置，从而捕获全局上下文。SAGAN (ICML 2018) 是早期成功案例。</p>
+  </div>
+
+  <!-- ====== SECTION 7 ====== -->
+  <div class="section" id="s7">
+    <span class="section-num">PART 07</span>
+    <h2 class="section-title">Masked Self-Attention 与自回归生成</h2>
+    <span class="slide-ref">对应 Slides 72–73</span>
+
+    <p>在语言建模（预测下一词）这类自回归任务中，位置 i 只能看到<strong>前面的词</strong>（位置 1…i），不能“偷看”未来。我们通过<strong>在 softmax 前将未来位置的相似度设为 -∞</strong> 来实现。</p>
+
+    <div class="math-block">
+      E'<sub>i,j</sub> = E<sub>i,j</sub> &nbsp; if j ≤ i &nbsp; else &nbsp; -∞<br>
+      A = softmax(E', dim=1)
+    </div>
+
+    <div class="callout callout-tip">
+      <span class="callout-label">PyTorch 实现方式</span>
+      创建一个上三角矩阵，需要屏蔽的位置填充 <code>-inf</code>。<br/>
+      <code>mask = torch.triu(torch.ones(T, T), diagonal=1).bool()</code><br/>
+      <code>scores.masked_fill_(mask, float('-inf'))</code>
+    </div>
+  </div>
+
+  <!-- ====== SECTION 8 ====== -->
+  <div class="section" id="s8">
+    <span class="section-num">PART 08</span>
+    <h2 class="section-title">多头自注意力（Multi-Head Self-Attention）</h2>
+    <span class="slide-ref">对应 Slides 74–81</span>
+
+    <p>与其用一个高维的注意力，不如将 Q、K、V <strong>切割成 H 个较小的“头”</strong>，每个头独立进行注意力计算，然后将所有头的输出拼接并线性投影。</p>
+
+    <div class="math-block">
+      head<sup>h</sup> = Attention( XW<sub>Q</sub><sup>h</sup>, XW<sub>K</sub><sup>h</sup>, XW<sub>V</sub><sup>h</sup> )<br>
+      MultiHead(X) = Concat( head<sup>1</sup>, …, head<sup>H</sup> ) W<sub>O</sub>
+    </div>
+
+    <div class="versus">
+      <div>
+        <h4 style="color:var(--accent);">单头 512 维</h4>
+        <p>所有信息在一个空间中混合，可能被平均效应掩盖细粒度模式。</p>
+      </div>
+      <div>
+        <h4 style="color:var(--green);">8 个头 × 64 维</h4>
+        <p>不同头可学会关注<strong>不同子空间</strong>：一个头专注语法结构，另一个关注语义相关，第三个寻找指代关系。并行计算，总计算量相似。</p>
+      </div>
+    </div>
+
+    <div class="callout callout-insight">
+      <span class="callout-label">Transformer 论文中的超参数</span>
+      Transformer-Base 使用 H=8, d<sub>k</sub>=d<sub>v</sub>=64, d<sub>model</sub>=512。
+    </div>
+  </div>
+
+  <!-- ====== SECTION 9 ====== -->
+  <div class="section" id="s9">
+    <span class="section-num">PART 09</span>
+    <h2 class="section-title">Transformer 架构详解</h2>
+    <span class="slide-ref">对应 Slides 92–102</span>
+
+    <p>Transformer 完全抛弃了 RNN，仅用 <strong>Attention + MLP + 残差连接 + LayerNorm</strong> 堆叠而成。每个块的结构为：</p>
+
+    <div class="diagram">
+      <div class="flow" style="flex-direction:column;gap:8px;font-size:.82em;">
+        <span class="flow-box fb-input">x<sub>i</sub></span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-attn">Multi-Head Self-Attention</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-state">+ (残差连接)</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-out">LayerNorm</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-fc">MLP (两层, ReLU)</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-state">+ (残差连接)</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-out">LayerNorm</span>
+        <span class="flow-arrow">↓</span>
+        <span class="flow-box fb-out">输出</span>
+      </div>
+      <div class="diagram-caption">Transformer Block：自注意力是向量之间<strong>唯一的交互</strong>，LayerNorm 和 MLP 独立应用于每个位置。</div>
+    </div>
+
+    <h3>关键设计选择</h3>
+    <ul>
+      <li><strong>残差连接</strong>：帮助梯度流动，可训练深层网络（12–24 层）。</li>
+      <li><strong>LayerNorm</strong>：在每个向量内部做归一化，稳定训练。</li>
+      <li><strong>MLP</strong>：通常两层，第一层升维（4×），第二层降维。每个位置独立处理，但完全相同。</li>
+      <li><strong>位置编码</strong>：在输入词嵌入上<strong>加上</strong>位置信息（此处必须补充，slides 虽未展开但实际架构必备）。</li>
+    </ul>
+
+    <div class="callout callout-teal">
+      <span class="callout-label">Pre-Norm vs Post-Norm</span>
+      原论文将 LayerNorm 放在残差之后（Post-Norm），但现在许多实现采用 <strong>Pre-Norm</strong>（LayerNorm 在 Attention/MLP 之前），训练更稳定，成为默认选择。
+    </div>
+  </div>
+
+  <!-- ====== SECTION 10 ====== -->
+  <div class="section" id="s10">
+    <span class="section-num">PART 10</span>
+    <h2 class="section-title">序列建模三范式对比与 Transformer 的可扩展性</h2>
+    <span class="slide-ref">对应 Slides 88–91</span>
+
+    <table>
+      <tr><th>模型</th><th>长程依赖</th><th>并行度</th><th>内存</th></tr>
+      <tr>
+        <td><strong>RNN (LSTM)</strong></td>
+        <td><span class="pill pill-green">好</span>（理论 O(1) 步可见全部）</td>
+        <td><span class="pill pill-red">差</span>（必须顺序计算）</td>
+        <td><span class="pill pill-green">低</span>（O(T)）</td>
+      </tr>
+      <tr>
+        <td><strong>1D CNN</strong></td>
+        <td><span class="pill pill-orange" style="background:var(--orange-light);color:var(--orange);">差</span>（需要多层堆叠）</td>
+        <td><span class="pill pill-green">好</span>（并行）</td>
+        <td><span class="pill pill-green">低</span>（O(T)）</td>
+      </tr>
+      <tr>
+        <td><strong>Self-Attention</strong></td>
+        <td><span class="pill pill-green">很好</span>（单层全局交互）</td>
+        <td><span class="pill pill-green">好</span>（并行）</td>
+        <td><span class="pill pill-red">高</span>（O(T<sup>2</sup>)）</td>
+      </tr>
+    </table>
+
+    <p>Transformer 用 Self-Attention 解决了长程依赖与并行化的矛盾，但代价是<strong>二次复杂度</strong>的内存消耗。这也是后续 Longformer、Linformer、BigBird 等高效 Transformer 变体要解决的核心问题。</p>
+  </div>
+
+  <!-- ====== SECTION 11 ====== -->
+  <div class="section" id="s11">
+    <span class="section-num">PART 11</span>
+    <h2 class="section-title">预训练与微调：NLP 的 ImageNet Moment</h2>
+    <span class="slide-ref">对应 Slides 103–121</span>
+
+    <p>Transformer 的巨大规模使其能在海量无标注文本上预训练，然后在下游任务微调。这被 Justin 称为 <strong>“NLP 的 ImageNet Moment”</strong>。</p>
+
+    <div class="versus">
+      <div>
+        <h4 style="color:var(--accent);">预训练（Pretraining）</h4>
+        <p>下载海量文本，训练一个巨型 Transformer 做<strong>语言建模</strong>（预测下一个词）或<strong>掩码语言建模</strong>（BERT 的 cloze 任务）。</p>
+      </div>
+      <div>
+        <h4 style="color:var(--green);">微调（Finetuning）</h4>
+        <p>在预训练模型之上添加小分类头，用<strong>极少任务数据</strong>更新全部或部分参数，获得 SOTA 结果。</p>
+      </div>
+    </div>
+
+    <h3>Scaling Law（Slides 104–112）</h3>
+    <p>从 65M 的 Transformer-Base 到 175B 的 GPT-3，再到 280B 的 Gopher，模型参数、数据量和训练成本呈指数增长。GPT-3 甚至展示了强大的<strong>上下文学习（in-context learning）</strong>能力——仅通过 prompt 示例就能执行翻译、语法纠错、文学风格模仿等任务，<strong>无需梯度更新</strong>。</p>
+
+    <div class="callout callout-insight">
+      <span class="callout-label">Vibe Coding 时代的启示</span>
+      当你用 AI 编程时，你实际上在“prompt”一个类似 GPT-3 的模型。理解 Attention 和 Transformer 的架构，能让你更精准地设计 prompt，也更能理解 AI 输出的局限性（例如幻觉源于注意力权重的错误分配）。
+    </div>
+  </div>
+
+  <!-- ====== SECTION 12 ====== -->
+  <div class="section" id="s12">
+    <span class="section-num">PART 12</span>
+    <h2 class="section-title">工程实现：从零搭建 Scaled Dot-Product Attention</h2>
+    <span class="slide-ref">PyTorch 核心代码</span>
+
+    <p>下面给出一个可运行的、经过优化的多头自注意力模块，结合了前面所有理论细节。</p>
+
+    <pre><code><span style="color:#c084fc;">import</span> torch
+<span style="color:#c084fc;">import</span> torch.nn <span style="color:#c084fc;">as</span> nn
+<span style="color:#c084fc;">import</span> torch.nn.functional <span style="color:#c084fc;">as</span> F
+<span style="color:#c084fc;">import</span> math
+
+<span style="color:#c084fc;">class</span> <span style="color:#22d3ee;">MultiHeadAttention</span>(nn.Module):
+    <span style="color:#c084fc;">def</span> <span style="color:#60a5fa;">__init__</span>(<span style="color:#f8fafc;">self</span>, d_model, num_heads, dropout=0.0):
+        <span style="color:#c084fc;">super</span>().<span style="color:#60a5fa;">__init__</span>()
+        <span style="color:#c084fc;">assert</span> d_model % num_heads == 0, <span style="color:#a5b4fc;">"d_model must be divisible by num_heads"</span>
+        <span style="color:#f8fafc;">self</span>.d_model = d_model
+        <span style="color:#f8fafc;">self</span>.num_heads = num_heads
+        <span style="color:#f8fafc;">self</span>.d_k = d_model // num_heads
+
+        <span style="color:#64748b;"># 合并 QKV 投影为一个大矩阵，提高效率</span>
+        <span style="color:#f8fafc;">self</span>.W_qkv = nn.Linear(d_model, 3 * d_model)
+        <span style="color:#f8fafc;">self</span>.W_o = nn.Linear(d_model, d_model)
+        <span style="color:#f8fafc;">self</span>.dropout = nn.Dropout(dropout)
+
+    <span style="color:#c084fc;">def</span> <span style="color:#60a5fa;">forward</span>(<span style="color:#f8fafc;">self</span>, x, mask=None):
+        <span style="color:#64748b;"># x: (batch, seq_len, d_model)</span>
+        B, T, C = x.shape
+
+        <span style="color:#64748b;"># 线性投影并分割 Q,K,V</span>
+        qkv = <span style="color:#f8fafc;">self</span>.W_qkv(x)  <span style="color:#64748b;"># (B, T, 3*C)</span>
+        q, k, v = qkv.chunk(3, dim=-1)  <span style="color:#64748b;"># each (B, T, C)</span>
+
+        <span style="color:#64748b;"># 重塑为多头: (B, num_heads, T, d_k)</span>
+        q = q.view(B, T, <span style="color:#f8fafc;">self</span>.num_heads, <span style="color:#f8fafc;">self</span>.d_k).transpose(1, 2)
+        k = k.view(B, T, <span style="color:#f8fafc;">self</span>.num_heads, <span style="color:#f8fafc;">self</span>.d_k).transpose(1, 2)
+        v = v.view(B, T, <span style="color:#f8fafc;">self</span>.num_heads, <span style="color:#f8fafc;">self</span>.d_k).transpose(1, 2)
+
+        <span style="color:#64748b;"># 缩放点积注意力</span>
+        scale = math.sqrt(<span style="color:#f8fafc;">self</span>.d_k)
+        attn_scores = (q @ k.transpose(-2, -1)) / scale  <span style="color:#64748b;"># (B, H, T, T)</span>
+
+        <span style="color:#c084fc;">if</span> mask <span style="color:#c084fc;">is</span> <span style="color:#c084fc;">not</span> <span style="color:#c084fc;">None</span>:
+            attn_scores = attn_scores.masked_fill(mask == 0, float(<span style="color:#a5b4fc;">'-inf'</span>))
+
+        attn_weights = F.softmax(attn_scores, dim=-1)
+        attn_weights = <span style="color:#f8fafc;">self</span>.dropout(attn_weights)
+
+        <span style="color:#64748b;"># 加权聚合 Value</span>
+        out = attn_weights @ v  <span style="color:#64748b;"># (B, H, T, d_k)</span>
+        out = out.transpose(1, 2).contiguous().view(B, T, C)
+
+        <span style="color:#64748b;"># 输出投影</span>
+        <span style="color:#c084fc;">return</span> <span style="color:#f8fafc;">self</span>.W_o(out)</code></pre>
+
+    <div class="callout callout-tip">
+      <span class="callout-label">代码中的关键设计</span>
+      <ul>
+        <li>将 Q、K、V 的投影合并为一个 <code>nn.Linear(d_model, 3*d_model)</code>，减少模块调用开销。</li>
+        <li>使用 <code>.view()</code> 和 <code>.transpose()</code> 巧妙实现多头拆分，而无需循环。</li>
+        <li>缩放因子取 <code>math.sqrt(d_k)</code>，符合理论推导。</li>
+        <li>mask 支持填充屏蔽（pad mask）和因果屏蔽（look-ahead mask）。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ====== CONNECTIONS ====== -->
+  <div class="section" style="margin-top:48px;padding-top:32px;border-top:1px dashed var(--border);">
+    <span class="section-num">CONNECTIONS</span>
+    <h2 class="section-title">知识串联</h2>
+    <h3>与前面的连接</h3>
+    <ul>
+      <li><strong>Lecture 16 (RNN/LSTM)</strong>：Attention 直接解决了 RNN 的信息瓶颈和长程梯度问题。</li>
+      <li><strong>Lecture 11 (迁移学习)</strong>：Transformer 预训练→微调正是迁移学习的工业级实践。</li>
+      <li><strong>Lecture 7–8 (CNN)</strong>：Self-Attention 可视为全局感受野的卷积，CNN 局部性与 Attention 全局性互补。</li>
+    </ul>
+    <h3>与后面的连接</h3>
+    <ul>
+      <li><strong>Lecture 18 (Vision Transformer)</strong>：把图像切成 patches 作为输入序列，直接应用 Transformer。</li>
+      <li><strong>现代前沿</strong>：Swin Transformer、ViT-22B、多模态 Transformer 都基于本课的自注意力机制。</li>
+    </ul>
+  </div>
+
+  <!-- ====== COMPETITIVE EDGE ====== -->
+  <div class="section" style="margin-top:48px;padding-top:32px;border-top:1px dashed var(--border);">
+    <span class="section-num">COMPETITIVE EDGE</span>
+    <h2 class="section-title">Vibe Coding 时代的竞争力</h2>
+    <div class="callout callout-warn">
+      <span class="callout-label">场景：AI 生成的 Transformer 代码训练缓慢，且 loss 不收敛</span>
+      你检查代码发现 QKV 投影后没有做正确的维度拆分，或者 softmax 的维度选错。使用本指南 Part 12 的标准实现快速替换，并验证缩放因子是否正确。能读懂并修复 Attention 实现的细节，是你区别于“调包侠”的核心能力。
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">场景：面试官问你“为什么 Transformer 要加位置编码”</span>
+      标准答案：Self-Attention 是排列不变的，没有位置信息。但更深的回答是：<strong>位置编码的本质是在无结构的 token 集合上强加一种序列偏置</strong>。选择可学习还是正弦编码，取决于你是否需要外推到训练时未见过的长度。这种理解直接展示了你的理论深度。
+    </div>
+    <div class="callout callout-key">
+      <span class="callout-label">场景：你需要为超长文档（100万 token）设计一个分类模型</span>
+      普通 Transformer 的内存复杂度是 O(T²)，无法直接使用。你需要了解高效 Attention 变体（稀疏 Attention、线性 Attention、FlashAttention）。而这些变体都源自今天所学的 QKV 框架。掌握基础才能驾驭前沿。
+    </div>
+  </div>
+
+  <!-- ====== CHECKLIST ====== -->
+  <div class="section" style="margin-top:64px;padding-top:32px;border-top:2px solid var(--text);">
+    <h2 class="section-title">核心检查清单</h2>
+    <table>
+      <tr><th>#</th><th>检查项</th><th>对应 Slide</th></tr>
+      <tr><td>1</td><td>Seq2Seq 的信息瓶颈到底是什么？Attention 如何解决？</td><td>10–11</td></tr>
+      <tr><td>2</td><td>Bahdanau Attention 的对齐分数、注意力权重、上下文向量如何计算？</td><td>13–15</td></tr>
+      <tr><td>3</td><td>为什么注意力权重不需要直接监督？梯度如何流动？</td><td>15</td></tr>
+      <tr><td>4</td><td>通用的 QKV Attention 中，Key 和 Value 为何分离？</td><td>49–51</td></tr>
+      <tr><td>5</td><td>为什么需要除以 √d<sub>k</sub>？数学原理是什么？</td><td>47</td></tr>
+      <tr><td>6</td><td>Self-Attention 为什么是排列不变的？缺少什么关键信息？</td><td>63–70</td></tr>
+      <tr><td>7</td><td>Masked Self-Attention 如何在 softmax 前屏蔽未来 token？</td><td>72–73</td></tr>
+      <tr><td>8</td><td>Multi-Head Attention 相对于单头注意力的优势？</td><td>74–81</td></tr>
+      <tr><td>9</td><td>Transformer Block 包含哪些子层？残差和 LayerNorm 的位置？</td><td>95–96</td></tr>
+      <tr><td>10</td><td>RNN、CNN 和 Self-Attention 的优缺点对比？</td><td>88–91</td></tr>
+      <tr><td>11</td><td>Transformer 预训练和微调的典型流程是什么？</td><td>103</td></tr>
+      <tr><td>12</td><td>GPT-3 的“上下文学习”与传统微调有何根本不同？</td><td>115–121</td></tr>
+      <tr><td>13</td><td>你能从零写出 Multi-Head Attention 的 PyTorch 代码吗？</td><td>—</td></tr>
+    </table>
+
+    <div class="callout callout-tip" style="margin-top:24px;">
+      <span class="callout-label">下一步</span>
+      Lecture 17 为你打开了 Transformer 世界的大门。接下来 <strong>Lecture 18 (Vision Transformers)</strong> 将展示如何把图像也视为 token 序列。强烈建议你立刻用 Part 12 的代码在 Colab 上实现一个简单的 Transformer 语言模型，感受 Attention 的实际力量。
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
