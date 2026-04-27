@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attention 知识体系全景图</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f8f7f4;--card:#fff;--text:#16171b;--sub:#6b6e76;--accent:#2c5ff6;--accent2:#6e3ff3;--green:#0d8a5e;--red:#d63031;--orange:#e17b1a;--teal:#0a8a8a;--border:#e3e1dc;--border2:#d1cfc9;--codebg:#1a1d27;--mono:'DM Mono',monospace;--sans:'Noto Sans SC',sans-serif;--serif:'Crimson Pro',serif;--rad:10px;--shadow:0 1px 3px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.75;font-size:15px;-webkit-font-smoothing:antialiased}
+.container{max-width:900px;margin:0 auto;padding:48px 24px 120px}
+
+/* ---- Header ---- */
+.hero{text-align:center;padding:48px 0 40px;margin-bottom:40px}
+.hero-tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);padding:3px 12px;border-radius:20px;margin-bottom:16px}
+.hero h1{font-family:var(--serif);font-size:2.6em;font-weight:700;line-height:1.15;margin-bottom:10px;letter-spacing:-.02em}
+.hero .sub{font-size:1em;color:var(--sub);font-style:italic;font-family:var(--serif)}
+
+/* ---- Section system ---- */
+.chapter{margin-bottom:56px}
+.ch-bar{display:flex;align-items:center;gap:12px;margin-bottom:20px;border-bottom:2px solid var(--text);padding-bottom:8px}
+.ch-num{font-family:var(--mono);font-size:.72em;color:var(--accent2);letter-spacing:1.5px;background:#ede8fe;padding:2px 10px;border-radius:4px}
+.ch-title{font-family:var(--serif);font-size:1.55em;font-weight:700}
+
+h3{font-size:1.1em;font-weight:700;margin:24px 0 8px}
+p{margin-bottom:12px}
+strong{font-weight:700}
+em{font-style:italic}
+
+/* ---- Cards ---- */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--rad);padding:20px 24px;margin:16px 0;box-shadow:var(--shadow)}
+.insight-card{border-left:4px solid var(--accent2);background:#f9f7ff}
+.warn-card{border-left:4px solid var(--red);background:#fef5f5}
+.key-card{border-left:4px solid var(--accent);background:#f4f7ff}
+.green-card{border-left:4px solid var(--green);background:#f0faf5}
+.card-label{font-family:var(--mono);font-size:.7em;letter-spacing:1.5px;text-transform:uppercase;font-weight:500;display:block;margin-bottom:6px}
+.card-label.insight{color:var(--accent2)}
+.card-label.warn{color:var(--red)}
+.card-label.key{color:var(--accent)}
+.card-label.green{color:var(--green)}
+
+/* ---- Evolution chain ---- */
+.evo-chain{position:relative;margin:24px 0;padding:0}
+.evo-node{display:grid;grid-template-columns:56px 1fr;gap:16px;margin-bottom:0;position:relative;padding-bottom:24px}
+.evo-node:last-child{padding-bottom:0}
+.evo-node:not(:last-child)::after{content:'';position:absolute;left:27px;top:56px;bottom:0;width:2px;background:linear-gradient(to bottom,var(--accent),var(--accent2))}
+.evo-dot{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.72em;font-weight:500;color:#fff;z-index:1;flex-shrink:0}
+.evo-body{padding-top:6px}
+.evo-body h4{font-size:1.02em;font-weight:700;margin-bottom:4px}
+.evo-body .trigger{font-size:.88em;color:var(--red);font-style:italic;margin-bottom:4px;font-family:var(--serif)}
+.evo-body .formula{font-family:var(--mono);font-size:.82em;background:var(--codebg);color:#cdd6f4;padding:8px 12px;border-radius:6px;margin:6px 0;line-height:1.7;white-space:pre-wrap}
+.evo-body .delta{display:inline-block;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:.8em;font-weight:500}
+.evo-body .cost{display:inline-block;background:#fef2f2;color:#991b1b;padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:.8em;font-weight:500}
+
+/* ---- Unified formula ---- */
+.formula-block{background:var(--card);border:2px solid var(--accent);border-radius:var(--rad);padding:24px 28px;margin:20px 0;box-shadow:0 2px 12px rgba(44,95,246,.1)}
+.formula-block .ftitle{font-family:var(--mono);font-size:.72em;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.formula-block .feq{font-family:var(--serif);font-size:1.2em;text-align:center;line-height:2;padding:8px 0}
+.formula-block .fnote{font-size:.88em;color:var(--sub);text-align:center;margin-top:8px;font-style:italic}
+
+/* ---- Comparison table ---- */
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:#f5f4f0;font-weight:700;font-size:.8em;text-transform:uppercase;letter-spacing:.5px}
+.dim{font-family:var(--mono);font-size:.85em;color:var(--accent);font-weight:500}
+
+/* ---- Taxonomy grid ---- */
+.tax-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+.tax-item{background:var(--card);border:1px solid var(--border);border-radius:var(--rad);padding:16px 18px;box-shadow:var(--shadow)}
+.tax-item h5{font-size:.95em;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.tax-badge{font-family:var(--mono);font-size:.65em;padding:2px 8px;border-radius:3px;font-weight:500;letter-spacing:1px;color:#fff}
+
+/* ---- Interactive stepper ---- */
+.stepper{margin:24px 0}
+.step-tabs{display:flex;gap:4px;margin-bottom:0;overflow-x:auto;padding-bottom:2px}
+.step-tab{padding:8px 14px;border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;font-size:.85em;font-family:var(--sans);cursor:pointer;background:var(--bg);color:var(--sub);white-space:nowrap;transition:all .15s}
+.step-tab:hover{background:var(--card)}
+.step-tab.on{background:var(--card);color:var(--text);font-weight:700;border-color:var(--border2);position:relative}
+.step-tab.on::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--card)}
+.step-body{border:1px solid var(--border2);border-radius:0 8px 8px 8px;background:var(--card);padding:20px 24px;box-shadow:var(--shadow)}
+.step-pane{display:none}
+.step-pane.on{display:block}
+
+/* ---- Code ---- */
+pre{background:var(--codebg);color:#cdd6f4;padding:16px 20px;border-radius:8px;overflow-x:auto;font-family:var(--mono);font-size:.82em;line-height:1.7;margin:14px 0}
+code{font-family:var(--mono);background:#f0eeea;padding:2px 5px;border-radius:3px;font-size:.88em}
+
+/* ---- Connector lines (CSS) ---- */
+.connector{display:flex;align-items:center;justify-content:center;padding:4px 0;color:var(--sub)}
+.connector svg{width:24px;height:24px}
+
+/* ---- Mental model cards ---- */
+.mm-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+.mm-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rad);padding:14px;text-align:center;box-shadow:var(--shadow);position:relative}
+.mm-card::before{content:attr(data-icon);font-size:1.6em;display:block;margin-bottom:6px}
+.mm-card h5{font-size:.92em;font-weight:700;margin-bottom:4px}
+.mm-card p{font-size:.82em;color:var(--sub);margin:0;line-height:1.5}
+
+/* ---- Flow diagram (pure CSS) ---- */
+.flow-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0;font-family:var(--mono);font-size:.8em}
+.flow-box{padding:6px 12px;border-radius:6px;border:2px solid;font-weight:500}
+
+/* ---- Architecture diagram ---- */
+.arch{background:var(--card);border:1px solid var(--border);border-radius:var(--rad);padding:24px;margin:20px 0;box-shadow:var(--shadow)}
+.arch-layer{display:flex;align-items:center;justify-content:center;margin:8px 0;gap:8px}
+.arch-block{padding:10px 20px;border-radius:8px;text-align:center;font-size:.88em;font-weight:500;border:1.5px solid}
+.arch-plus{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--sub);display:flex;align-items:center;justify-content:center;font-size:.9em;color:var(--sub);flex-shrink:0}
+.arch-arrow{color:var(--sub);text-align:center;font-size:1.1em;margin:2px 0}
+.arch-label{font-size:.78em;color:var(--sub);font-style:italic;text-align:right;margin-right:8px}
+.arch-note{font-size:.82em;color:var(--sub);text-align:center;margin-top:4px}
+
+/* ---- Responsive ---- */
+@media(max-width:640px){.hero h1{font-size:1.8em}.tax-grid{grid-template-columns:1fr}.mm-row{grid-template-columns:1fr}.container{padding:24px 16px 80px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <div class="hero-tag">Lecture 17 · Knowledge System Map</div>
+  <h1>Attention 知识体系全景图</h1>
+  <div class="sub">从信息瓶颈到 Transformer —— 一条完整的逻辑推导链</div>
+</div>
+
+<!-- ============================================================ -->
+<!--  CHAPTER 1 : THE BIG PICTURE                                 -->
+<!-- ============================================================ -->
+<div class="chapter">
+<div class="ch-bar">
+  <span class="ch-num">MAP 01</span>
+  <span class="ch-title">全景鸟瞰：一条推导链</span>
+</div>
+
+<p>Lecture 17 的所有内容可以被还原为<strong>一条连续的逻辑推导链</strong>。每一步都由前一步暴露的问题驱动，不存在凭空出现的设计——理解了这条链，你就拥有了重新推导 Transformer 的能力。</p>
+
+<div class="evo-chain">
+
+  <div class="evo-node">
+    <div class="evo-dot" style="background:var(--red)">起点</div>
+    <div class="evo-body">
+      <h4>Seq2Seq 的信息瓶颈</h4>
+      <div class="trigger">问题：整个输入序列被压缩成一个固定维度的向量 c = h_T，长序列信息严重丢失</div>
+      <p style="font-size:.9em">编码器必须把所有信息塞进一个瓶颈向量，解码器从这个单一向量出发生成——信息在瓶颈处被大量丢弃。</p>
+    </div>
+  </div>
+
+  <div class="evo-node">
+    <div class="evo-dot" style="background:var(--accent)">v0</div>
+    <div class="evo-body">
+      <h4>Seq2Seq Attention（Bahdanau 2015）</h4>
+      <div class="trigger">方案：让解码器在每一步动态"回头看"编码器的所有隐藏状态</div>
+      <div class="formula">e_t,i = f_att(s_{t-1}, h_i)     // MLP 计算相似度
+a_t   = softmax(e_t)            // 归一化为概率
+c_t   = Σ_i a_t,i · h_i         // 加权求和</div>
+      <p style="font-size:.9em"><span class="delta">解决</span> 信息瓶颈——每步都能访问所有输入 &nbsp; <span class="cost">遗留</span> f_att 是 MLP，不通用，不高效</p>
+    </div>
+  </div>
+
+  <div class="evo-node">
+    <div class="evo-dot" style="background:var(--accent)">v1</div>
+    <div class="evo-body">
+      <h4>点积 Attention</h4>
+      <div class="trigger">问题：MLP 相似度计算慢，无法矩阵化</div>
+      <div class="formula">e_i = q · X_i                   // 点积：最简相似度</div>
+      <p style="font-size:.9em"><span class="delta">解决</span> 效率——变成矩阵乘法 &nbsp; <span class="cost">遗留</span> 高维下点积值爆炸</p>
+    </div>
+  </div>
+
+  <div class="evo-node">
+    <div class="evo-dot" style="background:var(--accent)">v2</div>
+    <div class="evo-body">
+      <h4>缩放点积 Attention</h4>
+      <div class="trigger">问题：D=512 时点积方差为 512，softmax 饱和</div>
+      <div class="formula">e_i = q · X_i / √D              // 方差归一化到 1</div>
+      <p style="font-size:.9em"><span class="delta">解决</span> 数值稳定性 &nbsp; <span class="cost">遗留</span> 只有一个 query</p>
+    </div>
+  </div>
+
+  <div class="evo-node">
+    <div class="evo-dot" style="background:var(--accent)">v3</div>
+    <div class="evo-body">
+      <h4>多 Query 并行</h4>
+      <div class="trigger">问题：多个位置需要同时做 attention，逐个计算浪费并行性</div>
+      <div class="formula">E = Q X^T / √D    // (N_Q × N_X) 一次算完</div>
+      <p style="font-size:.9em"><span class="delta">解决</span> 并行性 &nbsp; <span class="cost">遗留</span> X 身兼"匹配"和"检索"两职</p>
+    </div>
+  </div>
+
+  <div class="evo-node">
+    <div class="evo-dot" style="background:var(--accent)">v4</div>
+    <div class="evo-body">
+      <h4>Key-Value 分离</h4>
+      <div class="trigger">问题："用什么来匹配"和"匹配到了取什么"是两个不同的概念</div>
+      <div class="formula">K = X W_K,  V = X W_V
+E = Q K^T / √D,  A = softmax(E),  Y = A V</div>
+      <p style="font-size:.9em"><span class="delta">解决</span> 关注点分离——独立学习索引和内容 &nbsp; <span class="cost">遗留</span> Q 还是来自外部</p>
+    </div>
+  </div>
+
+  <div class="evo-node">
+    <div class="evo-dot" style="background:var(--teal)">SA</div>
+    <div class="evo-body">
+      <h4>Self-Attention</h4>
+      <div class="trigger">问题：序列理解需要内部词与词之间互相参考，但 Q 来自外部</div>
+      <div class="formula">Q = X W_Q,  K = X W_K,  V = X W_V
+// Q, K, V 全部从同一个 X 投影而来</div>
+      <p style="font-size:.9em"><span class="delta">解决</span> 序列自我交互 &nbsp; <span class="cost">遗留</span> O(N²) 内存 + 丢失位置信息 + 单一注意力模式</p>
+    </div>
+  </div>
+
+  <div class="evo-node">
+    <div class="evo-dot" style="background:var(--accent2)">MHA</div>
+    <div class="evo-body">
+      <h4>Multi-Head Attention</h4>
+      <div class="trigger">问题：一个 softmax 只能表达一种关注模式，语言关系是多维的</div>
+      <div class="formula">Split D → H heads of D/H each
+Y = Concat(head_1, ..., head_H) W_O</div>
+      <p style="font-size:.9em"><span class="delta">解决</span> 多种关系并行捕捉 &nbsp; <span class="cost">遗留</span> 还缺少非线性变换和归一化</p>
+    </div>
+  </div>
+
+  <div class="evo-node">
+    <div class="evo-dot" style="background:var(--green)">TFM</div>
+    <div class="evo-body">
+      <h4>Transformer Block</h4>
+      <div class="trigger">方案：MHA + Residual + LayerNorm + MLP = 一个完整的处理单元，堆叠 L 层</div>
+      <div class="formula">x = x + MHA(LN(x))       // 全局交互
+x = x + MLP(LN(x))       // 逐向量非线性变换</div>
+      <p style="font-size:.9em"><span class="delta">最终形态</span> Attention Is All You Need</p>
+    </div>
+  </div>
+
+</div><!-- evo-chain -->
+</div><!-- chapter -->
+
+
+<!-- ============================================================ -->
+<!--  CHAPTER 2 : UNIFIED MATH                                    -->
+<!-- ============================================================ -->
+<div class="chapter">
+<div class="ch-bar">
+  <span class="ch-num">MAP 02</span>
+  <span class="ch-title">统一数学框架</span>
+</div>
+
+<p>所有 Attention 变体共享同一个数学骨架。下面把 Cross-Attention、Self-Attention、Masked Self-Attention、Multi-Head Self-Attention 统一在一个框架下——它们的区别仅在于 <strong>Q 的来源</strong>、<strong>是否有 mask</strong>、<strong>head 数量</strong>三个参数。</p>
+
+<div class="formula-block">
+  <div class="ftitle">统一 Attention 公式</div>
+  <div class="feq">
+    Q = X<sub>Q</sub> W<sub>Q</sub> , &ensp; K = X<sub>KV</sub> W<sub>K</sub> , &ensp; V = X<sub>KV</sub> W<sub>V</sub><br>
+    E = Q K<sup>T</sup> / &radic;D<sub>head</sub> + M<br>
+    A = softmax(E, dim=-1)<br>
+    Y = A V
+  </div>
+  <div class="fnote">其中 M 是 mask 矩阵（无 mask 时为全零矩阵），D<sub>head</sub> = D / H</div>
+</div>
+
+<p>所有变体通过三个"开关"控制：</p>
+
+<table>
+  <tr><th>变体</th><th>X<sub>Q</sub> 来源</th><th>X<sub>KV</sub> 来源</th><th>Mask M</th><th>Heads H</th></tr>
+  <tr><td>Cross-Attention</td><td>解码器序列</td><td>编码器序列</td><td>全零</td><td>1</td></tr>
+  <tr><td>Self-Attention</td><td>同一个 X</td><td>同一个 X</td><td>全零</td><td>1</td></tr>
+  <tr><td>Masked Self-Attn</td><td>同一个 X</td><td>同一个 X</td><td>上三角 = -∞</td><td>1</td></tr>
+  <tr><td>MH Self-Attn</td><td>同一个 X</td><td>同一个 X</td><td>全零 / -∞</td><td>H (如 8)</td></tr>
+</table>
+
+<div class="card key-card">
+  <span class="card-label key">统一视角的价值</span>
+  <p>这个统一框架说明 Attention 的本质只有一个操作：<strong>"在一个向量集合中，根据 query 做软检索"</strong>。Cross vs Self 只是"谁提问"的区别；Mask 只是"能看到哪些位置"的约束；Multi-Head 只是"同时进行多少次独立检索"的选择。理解了这一点，任何新的 Attention 变体（Flash Attention, GQA, MLA 等）你都能快速定位它改了统一框架中的哪一部分。</p>
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!--  CHAPTER 3 : TAXONOMY                                        -->
+<!-- ============================================================ -->
+<div class="chapter">
+<div class="ch-bar">
+  <span class="ch-num">MAP 03</span>
+  <span class="ch-title">Attention 的四种形态</span>
+</div>
+
+<p>基于统一框架，Lecture 17 涉及的 Attention 可以分为四种形态。它们在不同的应用场景中出现：</p>
+
+<div class="tax-grid">
+  <div class="tax-item" style="border-top:3px solid var(--accent)">
+    <h5><span class="tax-badge" style="background:var(--accent)">CROSS</span> Cross-Attention</h5>
+    <p style="font-size:.88em"><strong>场景：</strong>一个序列查询另一个序列</p>
+    <p style="font-size:.88em"><strong>应用：</strong>Seq2Seq 翻译（解码器看编码器）、图像描述（RNN 看 CNN 特征图）、Transformer Decoder 中间层</p>
+    <p style="font-size:.85em;color:var(--sub);margin-top:6px">Q ≠ KV 来源。两组向量之间的交互。</p>
+  </div>
+  <div class="tax-item" style="border-top:3px solid var(--teal)">
+    <h5><span class="tax-badge" style="background:var(--teal)">SELF</span> Self-Attention</h5>
+    <p style="font-size:.88em"><strong>场景：</strong>序列理解自身（每个位置看所有位置）</p>
+    <p style="font-size:.88em"><strong>应用：</strong>BERT 编码器、ViT 编码器、序列表示学习</p>
+    <p style="font-size:.85em;color:var(--sub);margin-top:6px">Q = KV 来源。序列内部所有位置全连接交互。</p>
+  </div>
+  <div class="tax-item" style="border-top:3px solid var(--orange)">
+    <h5><span class="tax-badge" style="background:var(--orange)">MASKED</span> Masked Self-Attention</h5>
+    <p style="font-size:.88em"><strong>场景：</strong>自回归生成（只能看已经生成的部分）</p>
+    <p style="font-size:.88em"><strong>应用：</strong>GPT 系列、语言生成、Transformer Decoder 第一层</p>
+    <p style="font-size:.85em;color:var(--sub);margin-top:6px">E 的上三角填 -∞，softmax 后权重为 0。保证因果性。</p>
+  </div>
+  <div class="tax-item" style="border-top:3px solid var(--accent2)">
+    <h5><span class="tax-badge" style="background:var(--accent2)">MULTI-HEAD</span> Multi-Head Attention</h5>
+    <p style="font-size:.88em"><strong>场景：</strong>需要同时捕捉多种关系模式</p>
+    <p style="font-size:.88em"><strong>应用：</strong>所有现代 Transformer（正交于上面三种，可和任何一种组合使用）</p>
+    <p style="font-size:.85em;color:var(--sub);margin-top:6px">Split D → H 个子空间，每个子空间独立做 attention。参数量不变。</p>
+  </div>
+</div>
+
+<div class="card insight-card">
+  <span class="card-label insight">分类关系</span>
+  <p>前三种（Cross / Self / Masked Self）是关于 <strong>"谁看谁"</strong> 的分类，互斥。Multi-Head 是关于 <strong>"同时看几遍"</strong> 的正交维度，可以和前三种任意组合。实际中几乎总是使用 Multi-Head 版本。</p>
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!--  CHAPTER 4 : FIVE CORE PROPERTIES                            -->
+<!-- ============================================================ -->
+<div class="chapter">
+<div class="ch-bar">
+  <span class="ch-num">MAP 04</span>
+  <span class="ch-title">Attention 的五个核心性质</span>
+</div>
+
+<p>无论是哪种 Attention 变体，它们都共享一些基本性质。理解这些性质是理解 Transformer 架构决策的关键。</p>
+
+<div class="stepper">
+  <div class="step-tabs" id="propTabs">
+    <button class="step-tab on" onclick="sw('propTabs','propPanes',0)">① 可微分</button>
+    <button class="step-tab" onclick="sw('propTabs','propPanes',1)">② 置换等变</button>
+    <button class="step-tab" onclick="sw('propTabs','propPanes',2)">③ O(N²) 复杂度</button>
+    <button class="step-tab" onclick="sw('propTabs','propPanes',3)">④ 无参数核心</button>
+    <button class="step-tab" onclick="sw('propTabs','propPanes',4)">⑤ 集合操作</button>
+  </div>
+  <div id="propPanes">
+    <div class="step-pane on">
+      <h4 style="margin-top:0">① 完全可微分（End-to-End Differentiable）</h4>
+      <p>Attention 的所有操作——矩阵乘法、除以常数、softmax、加权求和——都是可微分的。因此<strong>注意力权重不需要人工监督</strong>，模型通过反向传播自动学习"在哪里看"。</p>
+      <p><strong>工程含义：</strong>你可以把 Attention 层插入任何计算图中，梯度会自然流过。不需要额外的损失函数来训练注意力权重。</p>
+    </div>
+    <div class="step-pane">
+      <h4 style="margin-top:0">② 置换等变性（Permutation Equivariance）</h4>
+      <p>Self-Attention 满足 <code>f(permute(X)) = permute(f(X))</code>。打乱输入顺序，输出也被相应打乱——模型<strong>天然不知道位置信息</strong>。</p>
+      <p><strong>直接后果：</strong>必须引入 Positional Encoding。这不是可选的附件，而是 Transformer 能处理序列的<strong>必要条件</strong>。</p>
+      <p><strong>深层含义：</strong>Self-Attention 的操作对象本质上是<strong>无序集合</strong>而非有序序列。RNN 天然处理序列（有内在的时间步），Self-Attention 天然处理集合（位置信息需要外加）。</p>
+    </div>
+    <div class="step-pane">
+      <h4 style="margin-top:0">③ O(N²) 时空复杂度</h4>
+      <p>注意力矩阵 E ∈ ℝ<sup>N×N</sup>，计算 QK<sup>T</sup> 需要 O(N²D) 运算，存储 E 和 A 需要 O(N²) 内存。</p>
+      <table>
+        <tr><th>序列长度 N</th><th>E 矩阵大小</th><th>内存（float32, 单层单 head）</th></tr>
+        <tr><td>512</td><td class="dim">262,144</td><td>~1 MB</td></tr>
+        <tr><td>4,096</td><td class="dim">16,777,216</td><td>~64 MB</td></tr>
+        <tr><td>32,768</td><td class="dim">1,073,741,824</td><td>~4 GB</td></tr>
+      </table>
+      <p><strong>工程含义：</strong>这就是 Flash Attention、滑动窗口 Attention（Swin）、稀疏 Attention 等优化技术存在的原因——都是在 O(N²) 的基本限制下做文章。</p>
+    </div>
+    <div class="step-pane">
+      <h4 style="margin-top:0">④ Attention 核心运算无可学习参数</h4>
+      <p>一个容易被忽视的事实：<code>E = QK<sup>T</sup>/√D → A = softmax(E) → Y = AV</code> 这三步中<strong>没有任何可学习参数</strong>。所有参数都在 W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>, W<sub>O</sub> 这四个投影矩阵中。</p>
+      <p><strong>深层含义：</strong>Attention 本身是一个<strong>固定的路由机制</strong>——它只决定"信息从哪来到哪去"。投影矩阵决定"什么样的信息参与路由"和"路由后的信息长什么样"。</p>
+    </div>
+    <div class="step-pane">
+      <h4 style="margin-top:0">⑤ 本质是集合上的操作</h4>
+      <p>Attention 的输出 y_i = Σ_j a_{i,j} · V_j 是 V 的加权和——这个操作和 V 的顺序无关（加法交换律）。Attention 把输入视为一个<strong>无序集合</strong>，而非有序序列或空间网格。</p>
+      <p><strong>与 RNN/CNN 的根本区别：</strong></p>
+      <ul style="margin-left:20px;font-size:.92em">
+        <li>RNN：操作对象是<strong>有序序列</strong>（h_t 依赖 h_{t-1}）</li>
+        <li>CNN：操作对象是<strong>空间网格</strong>（卷积核在空间上滑动）</li>
+        <li>Attention：操作对象是<strong>向量集合</strong>（每个元素和所有其他元素交互）</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!--  CHAPTER 5 : TRANSFORMER BLOCK                               -->
+<!-- ============================================================ -->
+<div class="chapter">
+<div class="ch-bar">
+  <span class="ch-num">MAP 05</span>
+  <span class="ch-title">Transformer Block 的设计原理</span>
+</div>
+
+<p>单独的 Multi-Head Attention 还不够——它只提供了"全局交互"能力，还需要"局部变换"（MLP）和训练稳定性保障（Residual + LayerNorm）。Transformer Block 是这四个组件的精密组合。</p>
+
+<div class="arch">
+  <div class="arch-note" style="margin-bottom:12px;font-weight:700;font-size:.95em">Transformer Block（Pre-Norm 版本）</div>
+
+  <div class="arch-layer">
+    <div class="arch-label" style="width:160px">输出 ↑</div>
+    <div class="arch-block" style="background:#f0fdf4;border-color:#86efac;color:#166534;width:100%">y₁, y₂, ..., yₙ</div>
+  </div>
+  <div class="arch-arrow">↑</div>
+
+  <div class="arch-layer">
+    <div class="arch-label" style="width:160px;font-size:.75em">逐向量独立 →</div>
+    <div class="arch-block" style="background:#fef3c7;border-color:#fcd34d;color:#92400e;flex:1">Layer Norm</div>
+  </div>
+  <div class="arch-layer">
+    <div class="arch-label" style="width:160px"></div>
+    <div class="arch-plus">+</div>
+    <div style="font-size:.78em;color:var(--sub);flex:1">← Residual skip (梯度高速公路)</div>
+  </div>
+  <div class="arch-layer">
+    <div class="arch-label" style="width:160px;font-size:.75em">逐向量独立 →</div>
+    <div class="arch-block" style="background:#ede9fe;border-color:#c4b5fd;color:#5b21b6;flex:1">MLP：Linear → GELU → Linear</div>
+  </div>
+  <div class="arch-arrow">↑</div>
+
+  <div class="arch-layer">
+    <div class="arch-label" style="width:160px;font-size:.75em">逐向量独立 →</div>
+    <div class="arch-block" style="background:#fef3c7;border-color:#fcd34d;color:#92400e;flex:1">Layer Norm</div>
+  </div>
+  <div class="arch-layer">
+    <div class="arch-label" style="width:160px"></div>
+    <div class="arch-plus">+</div>
+    <div style="font-size:.78em;color:var(--sub);flex:1">← Residual skip (梯度高速公路)</div>
+  </div>
+  <div class="arch-layer">
+    <div class="arch-label" style="width:160px;font-size:.75em;color:var(--accent);font-weight:600">唯一交互层 →</div>
+    <div class="arch-block" style="background:#dbeafe;border-color:#93c5fd;color:#1e40af;flex:1">Multi-Head Self-Attention</div>
+  </div>
+  <div class="arch-arrow">↑</div>
+
+  <div class="arch-layer">
+    <div class="arch-label" style="width:160px">输入 ↑</div>
+    <div class="arch-block" style="background:#f0fdf4;border-color:#86efac;color:#166534;width:100%">x₁, x₂, ..., xₙ</div>
+  </div>
+</div>
+
+<div class="card green-card">
+  <span class="card-label green">设计哲学</span>
+  <p>Transformer Block 只有<strong>一个地方让向量们互相交流</strong>（MHA），其余操作全是逐向量独立的。这种"全局交互 + 局部变换"的交替设计有两个好处：(1) <strong>可并行性</strong>——除了 MHA 之外的所有操作都可以逐向量独立计算；(2) <strong>可解释性</strong>——信息流动的唯一通道就是 attention 权重矩阵 A，你可以直接可视化它来理解模型在做什么。</p>
+</div>
+
+<h3>四个组件各自的角色</h3>
+
+<table>
+  <tr><th>组件</th><th>角色</th><th>操作范围</th><th>如果去掉会怎样</th></tr>
+  <tr><td><strong>Multi-Head Self-Attention</strong></td><td>向量间信息交换</td><td>全局（所有 N 个向量）</td><td>向量永远看不到彼此，无法建模任何关系</td></tr>
+  <tr><td><strong>MLP</strong></td><td>逐向量非线性变换</td><td>局部（每个向量独立）</td><td>只有线性变换，表达能力严重不足</td></tr>
+  <tr><td><strong>Residual Connection</strong></td><td>梯度高速公路</td><td>跨层连接</td><td>深层网络梯度消失，无法训练</td></tr>
+  <tr><td><strong>Layer Normalization</strong></td><td>稳定训练动态</td><td>逐向量独立</td><td>训练不稳定，需要极小学习率和 warmup</td></tr>
+</table>
+</div>
+
+
+<!-- ============================================================ -->
+<!--  CHAPTER 6 : THREE PARADIGMS                                 -->
+<!-- ============================================================ -->
+<div class="chapter">
+<div class="ch-bar">
+  <span class="ch-num">MAP 06</span>
+  <span class="ch-title">三大范式对比：RNN vs CNN vs Attention</span>
+</div>
+
+<p>Lecture 17 的一个核心贡献是明确了 Self-Attention 相对于 RNN 和 CNN 的优势——为什么 Transformer 最终"赢了"。</p>
+
+<div class="mm-row">
+  <div class="mm-card" data-icon="↻" style="border-top:3px solid var(--red)">
+    <h5 style="color:var(--red)">RNN</h5>
+    <p><strong>操作对象：</strong>有序序列</p>
+    <p style="color:var(--green)">✓ 天然有序</p>
+    <p style="color:var(--green)">✓ 可处理变长</p>
+    <p style="color:var(--red)">✗ 无法并行</p>
+    <p style="color:var(--red)">✗ 长程信息衰减</p>
+  </div>
+  <div class="mm-card" data-icon="▦" style="border-top:3px solid var(--orange)">
+    <h5 style="color:var(--orange)">1D CNN</h5>
+    <p><strong>操作对象：</strong>空间网格</p>
+    <p style="color:var(--green)">✓ 高度可并行</p>
+    <p style="color:var(--green)">✓ 局部模式高效</p>
+    <p style="color:var(--red)">✗ 受限感受野</p>
+    <p style="color:var(--red)">✗ 需要堆叠很多层</p>
+  </div>
+  <div class="mm-card" data-icon="⊕" style="border-top:3px solid var(--accent)">
+    <h5 style="color:var(--accent)">Self-Attention</h5>
+    <p><strong>操作对象：</strong>向量集合</p>
+    <p style="color:var(--green)">✓ 高度可并行</p>
+    <p style="color:var(--green)">✓ 一层全局交互</p>
+    <p style="color:var(--red)">✗ O(N²) 内存</p>
+    <p style="color:var(--red)">✗ 需要位置编码</p>
+  </div>
+</div>
+
+<div class="card insight-card">
+  <span class="card-label insight">Transformer 胜出的根本原因</span>
+  <p>Transformer 的优势不仅仅是"效果好"——它赢在<strong>可扩展性（scalability）</strong>。RNN 无法并行，成为训练速度的瓶颈；CNN 需要堆很多层才能获得全局视野，参数效率低。Self-Attention 既可并行又天然全局交互，让"堆更多数据 + 堆更多参数 = 更好的性能"这条 scaling law 成为可能。从 65M 参数的 Transformer-Base 到 175B 参数的 GPT-3，架构本身几乎没有变——变的只是层数、维度和训练数据。</p>
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!--  CHAPTER 7 : TENSOR SHAPE CHEATSHEET                         -->
+<!-- ============================================================ -->
+<div class="chapter">
+<div class="ch-bar">
+  <span class="ch-num">MAP 07</span>
+  <span class="ch-title">张量形状速查表</span>
+</div>
+
+<p>面试和作业中最常犯的错误是张量形状搞混。以下是带 batch 维度的完整形状参考（B = batch, N = 序列长度, D = 模型维度, H = head 数）：</p>
+
+<table>
+  <tr><th>变量</th><th>形状</th><th>含义</th></tr>
+  <tr><td>X（输入）</td><td class="dim">(B, N, D)</td><td>B 个样本，每个 N 个 token，每个 D 维</td></tr>
+  <tr><td>W<sub>Q</sub>, W<sub>K</sub></td><td class="dim">(D, D)</td><td>投影到 Q/K 空间（包含所有 head）</td></tr>
+  <tr><td>W<sub>V</sub></td><td class="dim">(D, D)</td><td>投影到 V 空间</td></tr>
+  <tr><td>Q, K, V（投影后）</td><td class="dim">(B, N, D)</td><td>和 X 同形状</td></tr>
+  <tr><td>Q, K, V（reshape 后）</td><td class="dim">(B, H, N, D/H)</td><td>拆成 H 个 head</td></tr>
+  <tr><td>E = QK<sup>T</sup>/&radic;d</td><td class="dim">(B, H, N, N)</td><td>每个 head 的注意力分数矩阵</td></tr>
+  <tr><td>M (mask)</td><td class="dim">(1, 1, N, N) 或 (N, N)</td><td>广播到所有 batch 和 head</td></tr>
+  <tr><td>A = softmax(E+M)</td><td class="dim">(B, H, N, N)</td><td>每行是概率分布</td></tr>
+  <tr><td>Y<sub>heads</sub> = AV</td><td class="dim">(B, H, N, D/H)</td><td>每个 head 的输出</td></tr>
+  <tr><td>Y<sub>concat</sub></td><td class="dim">(B, N, D)</td><td>reshape 合并所有 head</td></tr>
+  <tr><td>Y = Y<sub>concat</sub>W<sub>O</sub></td><td class="dim">(B, N, D)</td><td>最终输出，和输入同形状</td></tr>
+</table>
+
+<div class="card key-card">
+  <span class="card-label key">关键观察</span>
+  <p><strong>输入和输出形状完全相同：(B, N, D) → (B, N, D)</strong>。这就是为什么 Transformer Block 可以任意堆叠——每一层的输出可以直接作为下一层的输入，加上 residual connection 还能保证梯度流通。</p>
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!--  CHAPTER 8 : CODE SKELETON                                   -->
+<!-- ============================================================ -->
+<div class="chapter">
+<div class="ch-bar">
+  <span class="ch-num">MAP 08</span>
+  <span class="ch-title">完整代码骨架</span>
+</div>
+
+<p>最后，把整个 Transformer Block 的代码从底层到顶层完整呈现。这是你在 A3 中实现过的结构的理论对应。</p>
+
+<pre><code><span style="color:#89b4fa">import</span> torch
+<span style="color:#89b4fa">import</span> torch.nn <span style="color:#89b4fa">as</span> nn
+<span style="color:#89b4fa">import</span> math
+
+<span style="color:#6c7086"># ─── Layer 1: Scaled Dot-Product Attention ───</span>
+<span style="color:#89b4fa">def</span> <span style="color:#f9e2af">scaled_dot_product_attention</span>(Q, K, V, mask=None):
+    <span style="color:#6c7086"># Q: (B, H, N_Q, D_head)</span>
+    <span style="color:#6c7086"># K: (B, H, N_KV, D_head)</span>
+    <span style="color:#6c7086"># V: (B, H, N_KV, D_V)</span>
+    d = Q.size(-1)
+    E = Q @ K.transpose(-2, -1) / math.sqrt(d)  <span style="color:#6c7086"># (B,H,N_Q,N_KV)</span>
+    <span style="color:#89b4fa">if</span> mask <span style="color:#89b4fa">is not</span> None:
+        E = E.masked_fill(mask == 0, float(<span style="color:#a6e3a1">'-inf'</span>))
+    A = torch.softmax(E, dim=-1)                 <span style="color:#6c7086"># (B,H,N_Q,N_KV)</span>
+    Y = A @ V                                     <span style="color:#6c7086"># (B,H,N_Q,D_V)</span>
+    <span style="color:#89b4fa">return</span> Y, A
+
+<span style="color:#6c7086"># ─── Layer 2: Multi-Head Attention ───</span>
+<span style="color:#89b4fa">class</span> <span style="color:#f9e2af">MultiHeadAttention</span>(nn.Module):
+    <span style="color:#89b4fa">def</span> __init__(self, D, H):
+        super().__init__()
+        self.H, self.d_head = H, D // H
+        self.W_Q = nn.Linear(D, D)
+        self.W_K = nn.Linear(D, D)
+        self.W_V = nn.Linear(D, D)
+        self.W_O = nn.Linear(D, D)
+
+    <span style="color:#89b4fa">def</span> forward(self, X_Q, X_KV, mask=None):
+        B, N, D = X_Q.shape
+        <span style="color:#6c7086"># Project + reshape into (B, H, N, d_head)</span>
+        Q = self.W_Q(X_Q).view(B, -1, self.H, self.d_head).transpose(1,2)
+        K = self.W_K(X_KV).view(B, -1, self.H, self.d_head).transpose(1,2)
+        V = self.W_V(X_KV).view(B, -1, self.H, self.d_head).transpose(1,2)
+        <span style="color:#6c7086"># Attention</span>
+        Y, A = scaled_dot_product_attention(Q, K, V, mask)
+        <span style="color:#6c7086"># Concat + project</span>
+        Y = Y.transpose(1,2).reshape(B, -1, D)   <span style="color:#6c7086"># (B, N, D)</span>
+        <span style="color:#89b4fa">return</span> self.W_O(Y)
+
+<span style="color:#6c7086"># ─── Layer 3: Transformer Block (Pre-Norm) ───</span>
+<span style="color:#89b4fa">class</span> <span style="color:#f9e2af">TransformerBlock</span>(nn.Module):
+    <span style="color:#89b4fa">def</span> __init__(self, D, H, D_ff=None):
+        super().__init__()
+        D_ff = D_ff or 4 * D
+        self.ln1 = nn.LayerNorm(D)
+        self.attn = MultiHeadAttention(D, H)
+        self.ln2 = nn.LayerNorm(D)
+        self.mlp = nn.Sequential(
+            nn.Linear(D, D_ff), nn.GELU(), nn.Linear(D_ff, D)
+        )
+
+    <span style="color:#89b4fa">def</span> forward(self, x, mask=None):
+        <span style="color:#6c7086"># Sub-layer 1: Self-Attention with residual</span>
+        x = x + self.attn(self.ln1(x), self.ln1(x), mask)
+        <span style="color:#6c7086"># Sub-layer 2: MLP with residual</span>
+        x = x + self.mlp(self.ln2(x))
+        <span style="color:#89b4fa">return</span> x      <span style="color:#6c7086"># (B, N, D) → (B, N, D)  形状不变！</span>
+</code></pre>
+
+<div class="card green-card">
+  <span class="card-label green">代码与理论的对应</span>
+  <p>注意 <code>TransformerBlock.forward</code> 只有两行核心逻辑——一行 attention，一行 MLP，每行都有 residual 和 LayerNorm。从 65M 参数到 175B 参数的模型，这两行代码的结构完全一致——改变的只是 D、H、D_ff 和层数 L 的值。<strong>整个 Transformer 革命建立在这两行代码的数万次堆叠之上。</strong></p>
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<!--  CHAPTER 9 : THE COMPLETE MENTAL MODEL                       -->
+<!-- ============================================================ -->
+<div class="chapter">
+<div class="ch-bar">
+  <span class="ch-num">MAP 09</span>
+  <span class="ch-title">一句话总结每个概念</span>
+</div>
+
+<p>最终的自检：如果你能用一句话准确描述每个概念，你就真正掌握了 Lecture 17。</p>
+
+<table>
+  <tr><th>概念</th><th>一句话</th></tr>
+  <tr><td>Attention 的本质</td><td>根据 query 在一个向量集合中做<strong>软检索</strong>——用相似度加权而非精确匹配</td></tr>
+  <tr><td>e<sub>t,i</sub></td><td>query 和第 i 个 key 之间的<strong>原始匹配分数</strong>（未归一化标量）</td></tr>
+  <tr><td>a<sub>t,i</sub></td><td>softmax 归一化后的<strong>注意力权重</strong>（概率值，所有位置求和为 1）</td></tr>
+  <tr><td>c<sub>t</sub></td><td>所有 value 的<strong>加权平均</strong>——解码器第 t 步的动态上下文</td></tr>
+  <tr><td>&radic;D 缩放</td><td>高维点积方差为 D，除以 &radic;D 使方差归一到 1，<strong>防止 softmax 饱和</strong></td></tr>
+  <tr><td>Key-Value 分离</td><td><strong>索引和内容解耦</strong>——用 key 做匹配，用 value 取内容，互不干扰</td></tr>
+  <tr><td>Self-Attention</td><td>Q, K, V 全部从同一个输入 X 投影——<strong>序列和自己做 attention</strong></td></tr>
+  <tr><td>置换等变性</td><td>打乱输入顺序，输出也相应打乱——<strong>天然不知道位置</strong></td></tr>
+  <tr><td>Positional Encoding</td><td>把位置信息加到输入向量上，<strong>弥补 Self-Attention 缺失的顺序感知</strong></td></tr>
+  <tr><td>Masked Attention</td><td>E 的上三角填 -∞ 使 softmax 后权重为 0，<strong>禁止看未来</strong></td></tr>
+  <tr><td>Multi-Head</td><td>把 D 维 split 成 H 个子空间，每个子空间独立做 attention——<strong>同时捕捉多种关系</strong></td></tr>
+  <tr><td>Transformer Block</td><td>MHA（全局交互）+ MLP（逐向量变换）+ Residual + LN = <strong>一个完整的可堆叠处理单元</strong></td></tr>
+  <tr><td>Pre-Norm</td><td>LN 放在 sub-layer 之前，梯度直接流过 residual path，<strong>训练更稳定</strong></td></tr>
+</table>
+</div>
+
+<!-- ============================================================ -->
+<!--  CHAPTER 10 : WHAT'S NEXT                                    -->
+<!-- ============================================================ -->
+<div class="chapter" style="border-top:2px solid var(--text);padding-top:32px">
+<div class="ch-bar">
+  <span class="ch-num">NEXT</span>
+  <span class="ch-title">通向 Lecture 18 和更远</span>
+</div>
+
+<p>Lecture 17 给你装备了 Transformer 的完整理论框架。接下来的路径：</p>
+
+<div class="evo-chain" style="margin-top:20px">
+  <div class="evo-node">
+    <div class="evo-dot" style="background:var(--accent)">L18</div>
+    <div class="evo-body">
+      <h4>Vision Transformers（ViT）</h4>
+      <p style="font-size:.9em">把图像切成 16×16 patch，每个 patch flatten 成一个 token，直接用 Transformer 处理。Attention 从 NLP "入侵"计算机视觉。</p>
+    </div>
+  </div>
+  <div class="evo-node">
+    <div class="evo-dot" style="background:var(--accent2)">A5</div>
+    <div class="evo-body">
+      <h4>DETR / 目标检测</h4>
+      <p style="font-size:.9em">用 Transformer 的 Cross-Attention 做目标检测——object queries 直接 attend 到图像特征。</p>
+    </div>
+  </div>
+  <div class="evo-node" style="padding-bottom:0">
+    <div class="evo-dot" style="background:var(--green)">现代</div>
+    <div class="evo-body">
+      <h4>Flash Attention / RoPE / GQA / MLA …</h4>
+      <p style="font-size:.9em">所有这些现代改进都是在 Lecture 17 统一框架的某个环节上做文章——你已经有了理解它们的基础。</p>
+    </div>
+  </div>
+</div>
+</div>
+
+</div><!-- container -->
+
+<script>
+function sw(tabId,paneId,idx){
+  document.getElementById(tabId).querySelectorAll('.step-tab').forEach((t,i)=>t.classList.toggle('on',i===idx));
+  document.getElementById(paneId).querySelectorAll('.step-pane').forEach((p,i)=>p.classList.toggle('on',i===idx));
+}
+</script>
+</body>
+</html>
