@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lecture 16: Recurrent Neural Networks — 深度讲解</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #faf9f6;
+    --text: #1a1a2e;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --orange: #d97706;
+    --orange-light: #fef3c7;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+    --teal: #0d9488;
+    --teal-light: #ccfbf1;
+    --border: #e5e7eb;
+    --code-bg: #1e293b;
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .06);
+    --card-shadow-lg: 0 4px 16px rgba(0, 0, 0, .10), 0 2px 6px rgba(0, 0, 0, .06);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Noto Sans SC', 'Source Serif 4', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    font-size: 16px;
+}
+
+.container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px 100px;
+}
+
+.header {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 2px solid var(--text);
+    margin-bottom: 48px;
+}
+
+.header .tag {
+    display: inline-block;
+    background: var(--text);
+    color: var(--bg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    margin-bottom: 16px;
+}
+
+.header h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 2.4em;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 12px;
+}
+
+.header .subtitle {
+    font-size: 1.05em;
+    color: #666;
+    font-style: italic;
+}
+
+/* TOC */
+.toc {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin-bottom: 48px;
+    box-shadow: var(--card-shadow);
+}
+
+.toc h2 {
+    font-size: .85em;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #999;
+    margin-bottom: 12px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.toc ol {
+    padding-left: 20px;
+    columns: 2;
+    column-gap: 32px;
+}
+
+.toc li {
+    font-size: .92em;
+    margin-bottom: 4px;
+    break-inside: avoid;
+}
+
+.toc a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.toc a:hover {
+    text-decoration: underline;
+}
+
+/* Sections */
+.section {
+    margin-bottom: 56px;
+}
+
+.section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .8em;
+    color: var(--accent);
+    letter-spacing: 1px;
+}
+
+h2.section-title {
+    font-family: 'Source Serif 4', serif;
+    font-size: 1.7em;
+    font-weight: 700;
+    margin: 4px 0 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.slide-ref {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .78em;
+    color: #999;
+    margin-bottom: 16px;
+    display: block;
+}
+
+h3 {
+    font-size: 1.15em;
+    font-weight: 700;
+    margin: 28px 0 10px;
+    color: var(--text);
+}
+
+h4 {
+    font-size: 1.02em;
+    font-weight: 700;
+    margin: 20px 0 8px;
+    color: #333;
+}
+
+p {
+    margin-bottom: 14px;
+}
+
+/* Callouts */
+.callout {
+    border-left: 4px solid;
+    padding: 14px 18px;
+    margin: 18px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: .95em;
+}
+
+.callout-key {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+
+.callout-why {
+    border-color: var(--green);
+    background: var(--green-light);
+}
+
+.callout-warn {
+    border-color: var(--red);
+    background: var(--red-light);
+}
+
+.callout-tip {
+    border-color: var(--orange);
+    background: var(--orange-light);
+}
+
+.callout-insight {
+    border-color: var(--purple);
+    background: var(--purple-light);
+}
+
+.callout-teal {
+    border-color: var(--teal);
+    background: var(--teal-light);
+}
+
+.callout-label {
+    font-weight: 700;
+    font-size: .85em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.callout-key .callout-label {
+    color: var(--accent);
+}
+
+.callout-why .callout-label {
+    color: var(--green);
+}
+
+.callout-warn .callout-label {
+    color: var(--red);
+}
+
+.callout-tip .callout-label {
+    color: var(--orange);
+}
+
+.callout-insight .callout-label {
+    color: var(--purple);
+}
+
+.callout-teal .callout-label {
+    color: var(--teal);
+}
+
+/* Code */
+pre {
+    background: var(--code-bg);
+    color: #e2e8f0;
+    padding: 18px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .84em;
+    line-height: 1.65;
+    margin: 16px 0;
+}
+
+pre code {
+    background: none;
+    padding: 0;
+    color: #e2e8f0;
+}
+
+code {
+    font-family: 'JetBrains Mono', monospace;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: .88em;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: .92em;
+}
+
+th,
+td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    background: #f8fafc;
+    font-weight: 700;
+    font-size: .85em;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+/* Diagram */
+.diagram {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+}
+
+.diagram-caption {
+    font-size: .85em;
+    color: #666;
+    margin-top: 10px;
+    font-style: italic;
+}
+
+/* Flow */
+.flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .82em;
+}
+
+.flow-box {
+    padding: 7px 12px;
+    border-radius: 6px;
+    border: 2px solid;
+    font-weight: 500;
+}
+
+.flow-arrow {
+    color: #999;
+    font-size: 1.2em;
+}
+
+.fb-input {
+    background: #fef2f2;
+    border-color: #fca5a5;
+}
+
+.fb-rnn {
+    background: #dbeafe;
+    border-color: #93c5fd;
+}
+
+.fb-state {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+}
+
+.fb-out {
+    background: #fef3c7;
+    border-color: #fcd34d;
+}
+
+.fb-gate {
+    background: #ede9fe;
+    border-color: #c4b5fd;
+}
+
+.fb-fc {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.fb-lstm {
+    background: #ccfbf1;
+    border-color: #5eead4;
+}
+
+/* Versus */
+.versus {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.versus>div {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+}
+
+.versus h4 {
+    font-size: .95em;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+/* Step card */
+.step-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 10px 0;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.2em;
+    font-weight: 500;
+    color: var(--accent);
+    min-width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-light);
+    border-radius: 50%;
+}
+
+.step-content {
+    flex: 1;
+}
+
+.step-content strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* Math block */
+.math-block {
+    text-align: center;
+    padding: 16px 0;
+    font-size: 1.05em;
+    font-family: 'Source Serif 4', serif;
+    font-style: italic;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 16px 0;
+    box-shadow: var(--card-shadow);
+    overflow-x: auto;
+}
+
+.math-block-lg {
+    text-align: left;
+    padding: 20px 24px;
+    font-size: 1.0em;
+    font-family: 'Source Serif 4', serif;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 16px 0;
+    box-shadow: var(--card-shadow);
+    overflow-x: auto;
+    line-height: 2.2;
+}
+
+/* Highlight */
+.highlight {
+    background: linear-gradient(transparent 60%, #fef08a 60%);
+    padding: 0 2px;
+}
+
+strong {
+    font-weight: 700;
+}
+
+em {
+    font-style: italic;
+}
+
+ul {
+    margin: 8px 0 14px 20px;
+}
+
+ul li {
+    margin-bottom: 4px;
+}
+
+ol {
+    margin: 8px 0 14px 20px;
+}
+
+ol li {
+    margin-bottom: 6px;
+}
+
+/* Pill badge */
+.pill {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .75em;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin: 0 2px;
+    font-weight: 500;
+}
+
+.pill-red {
+    background: var(--red-light);
+    color: var(--red);
+}
+
+.pill-green {
+    background: var(--green-light);
+    color: var(--green);
+}
+
+.pill-blue {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+.pill-purple {
+    background: var(--purple-light);
+    color: var(--purple);
+}
+
+/* Image placeholder */
+.img-placeholder {
+    background: #f8fafc;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    text-align: center;
+    margin: 16px 0;
+    color: #999;
+    font-size: .9em;
+}
+
+/* Responsive */
+@media(max-width:600px) {
+    .header h1 {
+        font-size: 1.7em;
+    }
+    .toc ol {
+        columns: 1;
+    }
+    .container {
+        padding: 24px 16px 80px;
+    }
+    .versus {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Special: gate anatomy */
+.gate-anatomy {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 16px 0;
+}
+
+.gate-card {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 10px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+}
+
+.gate-card .gate-name {
+    font-weight: 700;
+    font-size: 1em;
+    margin-bottom: 4px;
+}
+
+.gate-card .gate-symbol {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.4em;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.gate-card .gate-fn {
+    font-size: .8em;
+    color: #666;
+    margin-top: 4px;
+}
+
+.gate-card .gate-role {
+    font-size: .78em;
+    color: #888;
+    margin-top: 6px;
+    font-style: italic;
+}
+
+@media(max-width:600px) {
+    .gate-anatomy {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+</style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- ====== HEADER ====== -->
+        <div class="header">
+            <div class="tag">EECS 498.008 / 598.008 &bull; TA 深度讲解</div>
+            <h1>Lecture 16: Recurrent Neural Networks</h1>
+            <div class="subtitle">Justin Johnson &mdash; March 16, 2022 &mdash; 104 slides &mdash; 从 Vanilla RNN 到 LSTM，从语言建模到图像描述</div>
+        </div>
+
+        <!-- ====== TOC ====== -->
+        <nav class="toc">
+            <h2>目录 Contents</h2>
+            <ol>
+                <li><a href="#s1">全局定位：RNN 在课程中的位置</a></li>
+                <li><a href="#s2">顺序处理非顺序数据</a></li>
+                <li><a href="#s3">Vanilla RNN：核心公式与隐藏状态</a></li>
+                <li><a href="#s4">RNN 计算图的四种模式</a></li>
+                <li><a href="#s5">Seq2Seq：编码器-解码器架构</a></li>
+                <li><a href="#s6">语言建模实战：字符级 RNN</a></li>
+                <li><a href="#s7">Truncated BPTT：截断反向传播</a></li>
+                <li><a href="#s8">可解释隐藏单元：RNN 学到了什么</a></li>
+                <li><a href="#s9">图像描述：CNN + RNN 多模态融合</a></li>
+                <li><a href="#s10">梯度流危机：爆炸与消失</a></li>
+                <li><a href="#s11">LSTM 深度解剖</a></li>
+                <li><a href="#s12">多层 RNN 与 GRU 等变体</a></li>
+            </ol>
+        </nav>
+
+        <!-- ====== SECTION 1: 全局定位 ====== -->
+        <div class="section" id="s1">
+            <span class="section-num">PART 01</span>
+            <h2 class="section-title">全局定位：RNN 在课程中的位置</h2>
+            <span class="slide-ref">对应 Slides 5–10</span>
+
+            <p>在完成 CNN 架构（Lectures 7–9）和训练方法论（Lectures 10–11）之后，我们进入<strong>序列建模</strong>的世界。RNN 是处理<strong>可变长度序列数据</strong>的核心工具——这是 CNN 的固定输入尺寸所无法优雅处理的。</p>
+
+            <div class="diagram">
+                <div class="flow" style="flex-direction:column;gap:12px;">
+                    <span class="flow-box fb-fc" style="width:90%"><strong>已完成</strong>：CNN 架构 + 训练三阶段（初始化、动态、后处理）</span>
+                    <span class="flow-arrow">&darr;</span>
+                    <span class="flow-box fb-rnn" style="width:90%;border-width:3px"><strong>Lecture 16 — RNN</strong><br>序列建模基础：隐藏状态、BPTT、LSTM、GRU</span>
+                    <span class="flow-arrow">&darr;</span>
+                    <span class="flow-box fb-state" style="width:90%"><strong>后续</strong>：Lecture 17 — Attention &amp; Transformers<br>（RNN 的进化替代者）</span>
+                </div>
+                <div class="diagram-caption">RNN 是理解 Transformer 的必要基础——Attention 机制最初就是为改进 RNN 而提出的。</div>
+            </div>
+
+            <div class="callout callout-key">
+                <span class="callout-label">RNN 处理序列的四种经典场景（Slides 7–10）</span>
+                <table>
+                    <tr><th>场景</th><th>输入</th><th>输出</th><th>示例</th></tr>
+                    <tr><td>One-to-Many</td><td>单张图像</td><td>单词序列</td><td>Image Captioning</td></tr>
+                    <tr><td>Many-to-One</td><td>图像序列（视频）</td><td>单个标签</td><td>视频分类</td></tr>
+                    <tr><td>Many-to-Many（同步）</td><td>单词序列</td><td>单词序列</td><td>机器翻译</td></tr>
+                    <tr><td>Many-to-Many（同步）</td><td>图像序列</td><td>标签序列</td><td>逐帧视频分类</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- ====== SECTION 2: 顺序处理非顺序数据 ====== -->
+        <div class="section" id="s2">
+            <span class="section-num">PART 02</span>
+            <h2 class="section-title">顺序处理非顺序数据：RNN 的独特视角</h2>
+            <span class="slide-ref">对应 Slides 11–13</span>
+
+            <p>Justin 用三张 slides 展示了 RNN 一个极为优雅的用途：<strong>将非序列数据（如图像）当作序列来处理</strong>。这打破了"RNN 只能处理序列"的刻板印象。</p>
+
+            <div class="versus">
+                <div>
+                    <h4 style="color:var(--accent)">Visual Attention（ICLR 2015）</h4>
+                    <p>通过<strong>一系列"glimpses"（瞥视）</strong>来分类图像。模型每次只看图像的一小部分，逐步积累信息，最终做出分类决策。</p>
+                    <p><em>类比：你不需要看清整幅画——先扫一眼轮廓，再聚焦关键细节。</em></p>
+                </div>
+                <div>
+                    <h4 style="color:var(--green)">DRAW（ICML 2015）</h4>
+                    <p><strong>逐块生成图像</strong>——每个时间步在画布上添加新的内容，就像人类画家一笔一笔地作画。</p>
+                    <p><em>Slide 13 还展示了与油画模拟器的集成——每个时间步输出一个新的笔画。</em></p>
+                </div>
+            </div>
+
+            <div class="callout callout-insight">
+                <span class="callout-label">核心洞见</span>
+                RNN 的本质不是"处理序列数据"，而是<strong>"通过内部状态累积信息"</strong>。只要你能把问题定义为"逐步积累信息"的过程，RNN 就能派上用场——无论数据本身是不是序列。这个洞见在 2025 年的<strong>扩散模型</strong>（逐步去噪生成图像）中依然熠熠生辉。
+            </div>
+        </div>
+
+        <!-- ====== SECTION 3: Vanilla RNN ====== -->
+        <div class="section" id="s3">
+            <span class="section-num">PART 03</span>
+            <h2 class="section-title">Vanilla RNN：核心公式与隐藏状态</h2>
+            <span class="slide-ref">对应 Slides 14–22</span>
+
+            <p>这是整堂课<strong>最重要的公式</strong>。Vanilla RNN（也称 Elman RNN，以 Jeffrey Elman 教授命名）的核心是一个简单的循环关系：</p>
+
+            <div class="math-block">
+                <strong>h<sub>t</sub> = tanh(W<sub>hh</sub> h<sub>t&minus;1</sub> + W<sub>xh</sub> x<sub>t</sub> + b<sub>h</sub>)</strong><br>
+                <strong>y<sub>t</sub> = W<sub>hy</sub> h<sub>t</sub> + b<sub>y</sub></strong>
+            </div>
+
+            <div class="callout callout-key">
+                <span class="callout-label">公式拆解</span>
+                <strong>h<sub>t</sub></strong>：当前时间步的<strong>隐藏状态</strong>（hidden state）——RNN 的"记忆"<br>
+                <strong>h<sub>t&minus;1</sub></strong>：上一时间步的隐藏状态<br>
+                <strong>x<sub>t</sub></strong>：当前时间步的输入<br>
+                <strong>W<sub>hh</sub></strong>：隐藏状态到隐藏状态的权重矩阵（<strong>核心！</strong>跨时间传递信息）<br>
+                <strong>W<sub>xh</sub></strong>：输入到隐藏状态的权重矩阵<br>
+                <strong>tanh</strong>：非线性激活函数（将值压缩到 [&minus;1, 1]）
+            </div>
+
+            <h3>RNN 计算图展开（Slide 19–22）</h3>
+            <p>RNN 的核心是一个<strong>重复使用的计算单元 f<sub>W</sub></strong>，在时间维度上展开：</p>
+
+            <div class="diagram">
+                <div class="flow">
+                    <span class="flow-box fb-state">h<sub>0</sub></span>
+                    <span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-rnn">f<sub>W</sub></span>
+                    <span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-state">h<sub>1</sub></span>
+                    <span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-rnn">f<sub>W</sub></span>
+                    <span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-state">h<sub>2</sub></span>
+                    <span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-rnn">f<sub>W</sub></span>
+                    <span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-state">h<sub>3</sub></span>
+                </div>
+                <div style="margin-top:10px;font-size:.82em;color:#666;">
+                    每次使用<strong>相同的权重 W</strong>——这就是"循环"的含义
+                </div>
+            </div>
+
+            <div class="callout callout-why">
+                <span class="callout-label">为什么叫"Vanilla"？</span>
+                "Vanilla RNN"就是最朴素的 RNN——只有一个隐藏状态向量 h，用一个 tanh 来更新。它简单优雅，但后面你会看到它在长序列上有严重的梯度问题。LSTM 和 GRU 就是为了解决这些问题而生的"增强版"。
+            </div>
+        </div>
+
+        <!-- ====== SECTION 4: RNN 计算图模式 ====== -->
+        <div class="section" id="s4">
+            <span class="section-num">PART 04</span>
+            <h2 class="section-title">RNN 计算图的四种模式</h2>
+            <span class="slide-ref">对应 Slides 23–27</span>
+
+            <p>根据输入和输出的序列长度关系，RNN 有四种经典的计算图模式。理解这些模式是<strong>设计 RNN 架构</strong>的基础。</p>
+
+            <table>
+                <tr><th>模式</th><th>结构</th><th>典型任务</th><th>Slide</th></tr>
+                <tr>
+                    <td><strong>Many-to-Many</strong></td>
+                    <td>每个输入 x<sub>t</sub> 对应一个输出 y<sub>t</sub></td>
+                    <td>词性标注、逐帧视频分类</td>
+                    <td>23–24</td>
+                </tr>
+                <tr>
+                    <td><strong>Many-to-One</strong></td>
+                    <td>读入整个序列，只在最后输出一个 y</td>
+                    <td>情感分析、视频分类</td>
+                    <td>26</td>
+                </tr>
+                <tr>
+                    <td><strong>One-to-Many</strong></td>
+                    <td>单个输入，产生整个输出序列</td>
+                    <td>图像描述生成、音乐生成</td>
+                    <td>27</td>
+                </tr>
+                <tr>
+                    <td><strong>Many-to-Many（异步）</strong></td>
+                    <td>先读完整个输入（编码），再生成整个输出（解码）</td>
+                    <td>机器翻译 = Seq2Seq</td>
+                    <td>28–29</td>
+                </tr>
+            </table>
+
+            <div class="callout callout-tip">
+                <span class="callout-label">实践记忆法</span>
+                输入序列长度 = <strong>决定"读"的模式</strong>；输出序列长度 = <strong>决定"写"的模式</strong>。Many-to-One 就是"读很多，写一个"；One-to-Many 就是"读一个，写很多"。Seq2Seq 就是"先读完（Many-to-One），再开始写（One-to-Many）"。
+            </div>
+        </div>
+
+        <!-- ====== SECTION 5: Seq2Seq ====== -->
+        <div class="section" id="s5">
+            <span class="section-num">PART 05</span>
+            <h2 class="section-title">Seq2Seq：编码器-解码器架构</h2>
+            <span class="slide-ref">对应 Slides 28–29</span>
+
+            <p>Seq2Seq（Sutskever et al., NIPS 2014）是 Many-to-One + One-to-Many 的组合，是机器翻译、文本摘要等任务的<strong>经典架构</strong>。</p>
+
+            <div class="diagram">
+                <div class="flow" style="flex-direction:column;gap:10px;font-size:.78em;">
+                    <div style="display:flex;gap:4px;align-items:center;justify-content:center;">
+                        <span class="flow-box fb-input">x<sub>1</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-rnn">f<sub>W</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-state">h<sub>1</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-rnn">f<sub>W</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-state">h<sub>2</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-rnn">f<sub>W</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-state">h<sub>3</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-rnn">f<sub>W</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-state" style="border-width:3px;">h<sub>T</sub></span>
+                    </div>
+                    <span style="font-size:.85em;color:#666;">↑ <strong>Encoder（Many-to-One）</strong>：将整个输入序列压缩成一个向量 h<sub>T</sub></span>
+                    <span class="flow-arrow" style="font-size:1.5em;">&darr;</span>
+                    <div style="display:flex;gap:4px;align-items:center;justify-content:center;">
+                        <span class="flow-box fb-state">h<sub>T</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-out">y<sub>1</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-rnn">f<sub>W2</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-out">y<sub>2</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-rnn">f<sub>W2</sub></span><span class="flow-arrow">&rarr;</span>
+                        <span class="flow-box fb-out">...</span>
+                    </div>
+                    <span style="font-size:.85em;color:#666;">↑ <strong>Decoder（One-to-Many）</strong>：从 h<sub>T</sub> 出发逐步生成输出序列</span>
+                </div>
+            </div>
+
+            <div class="callout callout-key">
+                <span class="callout-label">Seq2Seq 的核心瓶颈</span>
+                整个输入序列被压缩成<strong>单个固定长度的向量 h<sub>T</sub></strong>。对于长序列（如长句子），这个"信息瓶颈"会导致性能下降。<strong>Attention 机制（Lecture 17）正是为解决这个问题而提出的</strong>——它让解码器可以直接"看到"编码器的所有中间隐藏状态，而不只是最后一个。
+            </div>
+        </div>
+
+        <!-- ====== SECTION 6: 语言建模 ====== -->
+        <div class="section" id="s6">
+            <span class="section-num">PART 06</span>
+            <h2 class="section-title">语言建模实战：字符级 RNN</h2>
+            <span class="slide-ref">对应 Slides 30–54</span>
+
+            <p>Justin 用大量 slides 展示了<strong>字符级语言建模</strong>——这是一个完美的 RNN 教学示例，因为它的效果<strong>肉眼可见</strong>。</p>
+
+            <h3>任务定义（Slides 30–36）</h3>
+            <p>给定前 t&minus;1 个字符，预测第 t 个字符。训练序列 <code>"hello"</code>，词汇表 <code>[h, e, l, o]</code>：</p>
+
+            <div class="diagram">
+                <div class="flow">
+                    <span class="flow-box fb-input">"h"</span><span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-rnn">RNN</span><span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-out">预测 "e"</span>
+                </div>
+                <div class="flow" style="margin-top:6px;">
+                    <span class="flow-box fb-input">"he"</span><span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-rnn">RNN</span><span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-out">预测 "l"</span>
+                </div>
+                <div class="flow" style="margin-top:6px;">
+                    <span class="flow-box fb-input">"hel"</span><span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-rnn">RNN</span><span class="flow-arrow">&rarr;</span>
+                    <span class="flow-box fb-out">预测 "l"</span>
+                </div>
+                <div class="diagram-caption">测试时：采样一个字符，将其反馈给模型，生成下一个字符，循环往复。</div>
+            </div>
+
+            <h3>min-char-rnn.py：112 行 Python（Slide 48）</h3>
+            <p>Andrej Karpathy 的 <code>min-char-rnn.py</code> 是字符级 RNN 的极简实现——仅 112 行 Python。它完美展示了 RNN 的核心：<strong>前向传播、反向传播、参数更新</strong>。</p>
+
+            <h3>训练过程的文本演化（Slides 50–54）</h3>
+            <p>这是一个<strong>极其震撼</strong>的可视化：你眼睁睁地看着模型从完全随机的乱码，逐步学会单词拼写、语法结构、甚至莎士比亚的风格：</p>
+
+            <table>
+                <tr><th>阶段</th><th>生成文本示例</th></tr>
+                <tr>
+                    <td><span class="pill pill-red">初始</span></td>
+                    <td><code style="font-size:.8em;">tyntd-iafhatawiaoihrdemot lytdws e ,tfti, astai f...</code></td>
+                </tr>
+                <tr>
+                    <td><span class="pill pill-orange" style="background:var(--orange-light);color:var(--orange);">训练一会</span></td>
+                    <td><code style="font-size:.8em;">"Tmont thithey" fomesscerliund Keushey. Thom here sheulke...</code></td>
+                </tr>
+                <tr>
+                    <td><span class="pill pill-green">更久</span></td>
+                    <td><code style="font-size:.8em;">Aftair fall unsuch that the hall for Prince Velzonski's...</code></td>
+                </tr>
+                <tr>
+                    <td><span class="pill pill-blue">充分训练</span></td>
+                    <td>可生成莎士比亚风格的十四行诗（Slide 49）、Linux 内核代码（Slides 59–61）、甚至代数几何教科书（Slide 55）</td>
+                </tr>
+            </table>
+
+            <h3>嵌入层（Slide 42）</h3>
+            <p>输入字符用 <strong>one-hot 向量</strong> 表示。与权重矩阵相乘等价于<strong>"查表"（lookup）</strong>——提取权重矩阵的某一列。实践中，这一操作被抽象为 <strong>Embedding Layer</strong>（<code>nn.Embedding</code>），它本质上就是一个可学习的查找表。</p>
+
+            <div class="callout callout-tip">
+                <span class="callout-label">PyTorch 中的字符级语言模型核心代码</span>
+                <pre><code><span style="color:#64748b;"># 极简字符级 RNN 语言模型</span>
+<span style="color:#c084fc;">import</span> torch
+<span style="color:#c084fc;">import</span> torch.nn <span style="color:#c084fc;">as</span> nn
+
+<span style="color:#c084fc;">class</span> <span style="color:#22d3ee;">CharRNN</span>(nn.Module):
+    <span style="color:#c084fc;">def</span> <span style="color:#60a5fa;">__init__</span>(<span style="color:#f8fafc;">self</span>, vocab_size, hidden_size, num_layers=1):
+        <span style="color:#c084fc;">super</span>().<span style="color:#60a5fa;">__init__</span>()
+        <span style="color:#f8fafc;">self</span>.embed = nn.Embedding(vocab_size, hidden_size)
+        <span style="color:#f8fafc;">self</span>.rnn = nn.RNN(hidden_size, hidden_size, num_layers, batch_first=True)
+        <span style="color:#f8fafc;">self</span>.fc = nn.Linear(hidden_size, vocab_size)
+
+    <span style="color:#c084fc;">def</span> <span style="color:#60a5fa;">forward</span>(<span style="color:#f8fafc;">self</span>, x, h=None):
+        x = <span style="color:#f8fafc;">self</span>.embed(x)          <span style="color:#64748b;"># (B, T) -> (B, T, H)</span>
+        out, h = <span style="color:#f8fafc;">self</span>.rnn(x, h)       <span style="color:#64748b;"># out: (B, T, H), h: (L, B, H)</span>
+        logits = <span style="color:#f8fafc;">self</span>.fc(out)         <span style="color:#64748b;"># (B, T, H) -> (B, T, V)</span>
+        <span style="color:#c084fc;">return</span> logits, h</code></pre>
+            </div>
+        </div>
+
+        <!-- ====== SECTION 7: Truncated BPTT ====== -->
+        <div class="section" id="s7">
+            <span class="section-num">PART 07</span>
+            <h2 class="section-title">Truncated BPTT：截断反向传播通过时间</h2>
+            <span class="slide-ref">对应 Slides 43–47</span>
+
+            <p>训练 RNN 需要<strong>Backpropagation Through Time（BPTT）</strong>——在展开的计算图上做反向传播。但对于非常长的序列（如整本书），完整的 BPTT 在计算上不可行。<strong>Truncated BPTT</strong> 是工程上的核心解决方案。</p>
+
+            <div class="versus">
+                <div>
+                    <h4 style="color:var(--red);">完整 BPTT</h4>
+                    <p>前向传播遍历整个序列，然后反向传播遍历整个序列。</p>
+                    <p><strong>问题</strong>：序列长度 = 100 万时，内存和时间都不可接受。梯度还会爆炸/消失。</p>
+                </div>
+                <div>
+                    <h4 style="color:var(--green);">Truncated BPTT</h4>
+                    <p>将序列分成<strong>块（chunks）</strong>，在每个块内做 BPTT。<strong>隐藏状态跨块保持</strong>，但梯度只在块内传播。</p>
+                    <p><strong>效果</strong>：隐藏状态可以"永远"向前传递（保持长期记忆），但反向传播只限于较小步数。</p>
+                </div>
+            </div>
+
+            <div class="math-block">
+                <strong>Truncated BPTT 的核心权衡</strong><br>
+                截断长度 &uarr; → 更好的长期依赖学习，但计算成本 &uarr; 且梯度问题加剧<br>
+                截断长度 &darr; → 更快的训练，但模型只能学到较短范围的依赖
+            </div>
+
+            <div class="callout callout-why">
+                <span class="callout-label">工程实践</span>
+                典型的截断长度是 <strong>20–50 个时间步</strong>。在 PyTorch 中，你可以通过 <code>hidden.detach()</code> 来切断梯度流，实现 Truncated BPTT。这是个<strong>关键的工程技巧</strong>——在 AI 生成的代码中经常缺失，需要你手动补充。
+            </div>
+        </div>
+
+        <!-- ====== SECTION 8: 可解释隐藏单元 ====== -->
+        <div class="section" id="s8">
+            <span class="section-num">PART 08</span>
+            <h2 class="section-title">可解释隐藏单元：RNN 学到了什么</h2>
+            <span class="slide-ref">对应 Slides 62–68</span>
+
+            <p>这是 Justin 本人参与的研究（Karpathy, Johnson, and Fei-Fei, ICLR Workshop 2016）。他们在训练好的字符级 RNN 中发现了<strong>功能高度特化的隐藏单元</strong>——这些单元不是被设计出来的，而是<strong>自发涌现</strong>的。</p>
+
+            <div class="gate-anatomy">
+                <div class="gate-card">
+                    <div class="gate-name">引文检测单元</div>
+                    <div class="gate-symbol" style="font-size:2em;">&#x201C;&#x201D;</div>
+                    <div class="gate-fn">Quote Detection Cell</div>
+                    <div class="gate-role">在引号内激活，引号外关闭——像一个"引号开关"</div>
+                </div>
+                <div class="gate-card">
+                    <div class="gate-name">行长度跟踪单元</div>
+                    <div class="gate-symbol" style="font-size:2em;">&#x2194;</div>
+                    <div class="gate-fn">Line Length Tracking Cell</div>
+                    <div class="gate-role">跟踪当前行还剩多少字符到达行尾</div>
+                </div>
+                <div class="gate-card">
+                    <div class="gate-name">If 语句单元</div>
+                    <div class="gate-symbol" style="font-size:2em;">if</div>
+                    <div class="gate-fn">If Statement Cell</div>
+                    <div class="gate-role">在 C 代码的 if 语句块内激活，块外关闭</div>
+                </div>
+                <div class="gate-card">
+                    <div class="gate-name">注释单元</div>
+                    <div class="gate-symbol" style="font-size:2em;">/**/</div>
+                    <div class="gate-fn">Quote/Comment Cell</div>
+                    <div class="gate-role">区分代码和注释，在注释区域内激活</div>
+                </div>
+            </div>
+
+            <div class="callout callout-insight">
+                <span class="callout-label">为什么这很重要？</span>
+                这项研究证明了 RNN <strong>不是黑箱</strong>——至少部分隐藏单元具有清晰可解释的功能。在 2025 年，这种"机械可解释性"（Mechanistic Interpretability）研究在大语言模型上正如火如荼。理解 RNN 的可解释性是理解更大模型内部机制的第一步。这也提醒我们：<strong>好的模型自然会学习结构化的内部表示</strong>。
+            </div>
+        </div>
+
+        <!-- ====== SECTION 9: 图像描述 ====== -->
+        <div class="section" id="s9">
+            <span class="section-num">PART 09</span>
+            <h2 class="section-title">图像描述：CNN + RNN 多模态融合</h2>
+            <span class="slide-ref">对应 Slides 69–80</span>
+
+            <p>Image Captioning 是一个经典的<strong>多模态</strong>任务：输入一张图像，输出描述该图像的文本序列。这需要将 <strong>CNN 的视觉理解</strong>与 <strong>RNN 的语言生成</strong>结合起来。</p>
+
+            <h3>架构（Slides 70–78）</h3>
+            <p>核心修改：在 RNN 的隐藏状态更新中<strong>注入图像特征向量 v</strong>（来自预训练 CNN 的最后一层）：</p>
+
+            <div class="math-block">
+                <strong>原始 RNN</strong>：h<sub>t</sub> = tanh(W<sub>hh</sub>h<sub>t&minus;1</sub> + W<sub>xh</sub>x<sub>t</sub> + b<sub>h</sub>)<br><br>
+                <strong>修改后</strong>：h<sub>t</sub> = tanh(W<sub>hh</sub>h<sub>t&minus;1</sub> + W<sub>xh</sub>x<sub>t</sub> + <span style="color:var(--red);">W<sub>ih</sub>v</span> + b<sub>h</sub>)
+            </div>
+
+            <p>图像特征 v 在每个时间步都被使用——这告诉 RNN "你在描述的是什么图像"。</p>
+
+            <h3>效果展示（Slides 79–80）</h3>
+            <div class="versus">
+                <div>
+                    <h4 style="color:var(--green);">成功案例</h4>
+                    <ul style="font-size:.88em;">
+                        <li>"A cat sitting on a suitcase on the floor"</li>
+                        <li>"Two giraffes standing in a grassy field"</li>
+                        <li>"A tennis player in action on the court"</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color:var(--red);">失败案例</h4>
+                    <ul style="font-size:.88em;">
+                        <li>"A woman is holding a cat in her hand"（实际可能是其他物体）</li>
+                        <li>"A person holding a computer mouse on a desk"（误判物体）</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="callout callout-key">
+                <span class="callout-label">2015 年的 Image Captioning 五连发</span>
+                Slide 69 列出了 CVPR 2015 上<strong>五篇同时发表的</strong>图像描述论文——这标志着深度学习在多模态领域的爆发。核心思路惊人地一致：CNN 编码图像 + RNN 解码文本。这种"编码器-解码器"范式至今仍是多模态 AI 的基础。
+            </div>
+        </div>
+
+        <!-- ====== SECTION 10: 梯度流危机 ====== -->
+        <div class="section" id="s10">
+            <span class="section-num">PART 10</span>
+            <h2 class="section-title">Vanilla RNN 的梯度流危机：爆炸与消失</h2>
+            <span class="slide-ref">对应 Slides 81–86</span>
+
+            <p>这是理解 <strong>为什么需要 LSTM</strong> 的关键。Vanilla RNN 在长序列上训练困难，根本原因在于<strong>梯度流的不稳定性</strong>。</p>
+
+            <h3>问题根源（Slides 81–82）</h3>
+            <p>计算 h<sub>0</sub> 的梯度需要经过<strong>多次与 W 相乘</strong>（实际上是 W<sub>hh</sub><sup>T</sup> 的多次乘法）：</p>
+
+            <div class="math-block">
+                &part;L/&part;h<sub>0</sub> &prop; (W<sub>hh</sub><sup>T</sup>)<sup>t</sup> &times; (其他项)
+            </div>
+
+            <table>
+                <tr><th>条件</th><th>现象</th><th>后果</th></tr>
+                <tr>
+                    <td>W 的最大奇异值 <strong>&gt; 1</strong></td>
+                    <td><span class="pill pill-red">梯度爆炸</span></td>
+                    <td>梯度变为 NaN/Inf，训练崩溃</td>
+                </tr>
+                <tr>
+                    <td>W 的最大奇异值 <strong>&lt; 1</strong></td>
+                    <td><span class="pill pill-orange" style="background:var(--orange-light);color:var(--orange);">梯度消失</span></td>
+                    <td>早期时间步的梯度趋近于 0，模型无法学习长期依赖</td>
+                </tr>
+            </table>
+
+            <h3>解决方案（Slides 85–86）</h3>
+            <div class="versus">
+                <div>
+                    <h4 style="color:var(--red);">应对梯度爆炸</h4>
+                    <p><strong>梯度裁剪（Gradient Clipping）</strong>：如果梯度的 L2 范数超过阈值，就将其缩放到阈值大小。</p>
+                    <pre><code>grad_norm = torch.norm(grad)
+<span style="color:#c084fc;">if</span> grad_norm > threshold:
+    grad *= threshold / grad_norm</code></pre>
+                </div>
+                <div>
+                    <h4 style="color:var(--green);">应对梯度消失</h4>
+                    <p><strong>改变 RNN 架构！</strong>梯度裁剪治不了消失（梯度本身就很小，裁剪没有意义）。需要用<strong>加性交互</strong>（additive interactions）来改善梯度流——这就是 LSTM 的动机。</p>
+                </div>
+            </div>
+
+            <div class="callout callout-warn">
+                <span class="callout-label">Vibe Coding 时代的诊断能力</span>
+                当你用 AI 生成的 RNN 代码训练时，如果 loss 突然变成 NaN——这是<strong>梯度爆炸</strong>的典型症状。你需要知道加梯度裁剪，而不是盲目调参。如果 loss 下降极慢或完全不下降——可能是<strong>梯度消失</strong>，你需要考虑换 LSTM 或 GRU。这些诊断能力是 AI 无法替你做的。
+            </div>
+        </div>
+
+        <!-- ====== SECTION 11: LSTM ====== -->
+        <div class="section" id="s11">
+            <span class="section-num">PART 11</span>
+            <h2 class="section-title">LSTM 深度解剖：四门控 + Cell State</h2>
+            <span class="slide-ref">对应 Slides 87–96</span>
+
+            <p>LSTM（Long Short Term Memory, Hochreiter &amp; Schmidhuber, 1997）是解决梯度消失问题的<strong>经典方案</strong>。它的核心创新是引入了一个独立的 <strong>Cell State（细胞状态）c<sub>t</sub></strong>，其更新方式是<strong>加性的</strong>而非乘性的。</p>
+
+            <h3>LSTM 完整公式</h3>
+            <div class="math-block-lg">
+                <strong>四个门控的计算</strong>（一次矩阵乘法同时算出四个门）：<br>
+                &nbsp;&nbsp;[i<sub>t</sub>; f<sub>t</sub>; o<sub>t</sub>; g<sub>t</sub>] = [&sigma;; &sigma;; &sigma;; tanh](W [h<sub>t&minus;1</sub>; x<sub>t</sub>] + b<sub>h</sub>)<br><br>
+                <strong>Cell State 更新</strong>（加性！）：<br>
+                &nbsp;&nbsp;c<sub>t</sub> = <span style="color:var(--orange);">f<sub>t</sub></span> &odot; c<sub>t&minus;1</sub> + <span style="color:var(--accent);">i<sub>t</sub></span> &odot; <span style="color:var(--purple);">g<sub>t</sub></span><br><br>
+                <strong>隐藏状态输出</strong>：<br>
+                &nbsp;&nbsp;h<sub>t</sub> = <span style="color:var(--green);">o<sub>t</sub></span> &odot; tanh(c<sub>t</sub>)
+            </div>
+
+            <h3>四门控的功能（Slide 91）</h3>
+            <div class="gate-anatomy">
+                <div class="gate-card">
+                    <div class="gate-name">Input Gate</div>
+                    <div class="gate-symbol">i<sub>t</sub></div>
+                    <div class="gate-fn">&sigma; → [0,1]</div>
+                    <div class="gate-role">控制<strong>是否写入</strong>新信息到 cell state</div>
+                </div>
+                <div class="gate-card">
+                    <div class="gate-name">Forget Gate</div>
+                    <div class="gate-symbol">f<sub>t</sub></div>
+                    <div class="gate-fn">&sigma; → [0,1]</div>
+                    <div class="gate-role">控制<strong>是否擦除</strong>旧的 cell state 信息</div>
+                </div>
+                <div class="gate-card">
+                    <div class="gate-name">Output Gate</div>
+                    <div class="gate-symbol">o<sub>t</sub></div>
+                    <div class="gate-fn">&sigma; → [0,1]</div>
+                    <div class="gate-role">控制<strong>暴露多少</strong> cell state 给外部</div>
+                </div>
+                <div class="gate-card">
+                    <div class="gate-name">Gate Gate</div>
+                    <div class="gate-symbol">g<sub>t</sub></div>
+                    <div class="gate-fn">tanh → [&minus;1,1]</div>
+                    <div class="gate-role">候选值——<strong>要写入什么</strong>新信息</div>
+                </div>
+            </div>
+
+            <h3>LSTM 的无中断梯度流（Slides 93–95）</h3>
+            <p>从 c<sub>t</sub> 到 c<sub>t&minus;1</sub> 的反向传播<strong>只涉及逐元素乘法（f<sub>t</sub> &odot;）</strong>，没有矩阵乘法！这意味着：</p>
+
+            <div class="math-block">
+                &part;c<sub>t</sub>/&part;c<sub>t&minus;1</sub> = f<sub>t</sub> &nbsp;&nbsp;（逐元素！每个维度独立！）
+            </div>
+
+            <p>这就是 LSTM 解决梯度消失的核心：<strong>梯度可以通过 cell state 几乎无损地跨时间步传播</strong>。</p>
+
+            <div class="callout callout-insight">
+                <span class="callout-label">LSTM 与 ResNet 的血缘关系（Slide 96）</span>
+                LSTM 的 cell state 更新 <code>c<sub>t</sub> = f<sub>t</sub> &odot; c<sub>t&minus;1</sub> + i<sub>t</sub> &odot; g<sub>t</sub></code> 与 ResNet 的残差连接 <code>y = F(x) + x</code> 有着<strong>完全相同的核心思想</strong>：通过<strong>加性交互</strong>为梯度提供一条"高速公路"。Highway Networks（Srivastava et al., 2015）是二者之间的直接桥梁。这是深度学习史上最优雅的"殊途同归"之一。
+            </div>
+        </div>
+
+        <!-- ====== SECTION 12: 多层 RNN 与 GRU ====== -->
+        <div class="section" id="s12">
+            <span class="section-num">PART 12</span>
+            <h2 class="section-title">多层 RNN 与 GRU 等变体</h2>
+            <span class="slide-ref">对应 Slides 97–103</span>
+
+            <h3>多层 RNN（Slides 97–99）</h3>
+            <p>与 CNN 一样，RNN 也可以<strong>堆叠多层</strong>来增加模型容量。第 l 层的隐藏状态 h<sub>t</sub><sup>l</sup> 依赖于：</p>
+            <ul>
+                <li><strong>同一层上一时间步</strong>的隐藏状态 h<sub>t&minus;1</sub><sup>l</sup></li>
+                <li><strong>下一层同一时间步</strong>的隐藏状态 h<sub>t</sub><sup>l&minus;1</sup></li>
+            </ul>
+            <p>在 PyTorch 中，只需设置 <code>nn.LSTM(hidden_size, hidden_size, num_layers=3)</code> 即可。</p>
+
+            <h3>GRU：LSTM 的精简版（Slide 100）</h3>
+            <p>Gated Recurrent Unit（Cho et al., 2014）将 LSTM 的四个门<strong>精简为两个门</strong>（reset gate r<sub>t</sub> 和 update gate z<sub>t</sub>），并将 cell state 和 hidden state 合并为一个。</p>
+
+            <div class="versus">
+                <div>
+                    <h4 style="color:var(--accent);">LSTM</h4>
+                    <ul style="font-size:.88em;">
+                        <li>4 个门：i, f, o, g</li>
+                        <li>2 个状态：c<sub>t</sub>（cell）+ h<sub>t</sub>（hidden）</li>
+                        <li>参数量较大</li>
+                        <li>表现稳定，工业界首选</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color:var(--green);">GRU</h4>
+                    <ul style="font-size:.88em;">
+                        <li>2 个门：r（reset）, z（update）</li>
+                        <li>1 个状态：h<sub>t</sub>（合并了 cell 和 hidden）</li>
+                        <li>参数量约减少 25%</li>
+                        <li>小数据集上有时优于 LSTM</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>进化搜索发现的变体（Slide 101）</h3>
+            <p>Jozefowicz et al.（ICML 2015）用进化算法搜索了 10000 种 RNN 架构，发现了一些"奇怪但有效"的变体——有些使用 sign 函数而非 sigmoid，有些有非标准的门控连接。<strong>但 LSTM 和 GRU 仍然是最可靠的选择</strong>。</p>
+
+            <h3>Justin 的总结（Slide 103）</h3>
+            <div class="callout callout-key">
+                <span class="callout-label">本讲核心要点</span>
+                <ol>
+                    <li><strong>RNN 架构设计灵活</strong>——Many-to-One、One-to-Many、Seq2Seq 适应各种任务</li>
+                    <li><strong>Vanilla RNN 简单但不实用</strong>——梯度爆炸/消失使长序列训练困难</li>
+                    <li><strong>LSTM/GRU 是实际标准</strong>——加性交互（additive interactions）改善梯度流</li>
+                    <li><strong>梯度爆炸</strong>用梯度裁剪控制；<strong>梯度消失</strong>用 LSTM/GRU 的加性设计缓解</li>
+                    <li>更好的架构和理解是<strong>当前研究热点</strong>——Attention（下节课！）是下一步进化</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- ====== CONNECTIONS ====== -->
+        <div class="section" style="margin-top:48px;padding-top:32px;border-top:1px dashed var(--border);">
+            <span class="section-num">CONNECTIONS</span>
+            <h2 class="section-title">知识串联：前后连接</h2>
+
+            <h3>与前面的连接</h3>
+            <ul>
+                <li><strong>Lecture 7–8（CNN 架构）</strong>：Image Captioning 使用 CNN 作为视觉编码器——这正是迁移学习的直接应用</li>
+                <li><strong>Lecture 10–11（训练方法论）</strong>：RNN 的训练同样需要学习率调度（Cosine 通常最好）、权重初始化、正则化——那些原则完全适用</li>
+                <li><strong>Lecture 11（迁移学习）</strong>：Image Captioning 中的 CNN 通常用 ImageNet 预训练——迁移学习无处不在</li>
+            </ul>
+
+            <h3>与后面的连接</h3>
+            <ul>
+                <li><strong>Lecture 17（Attention &amp; Transformers）</strong>：Attention 最初就是为解决 RNN 的信息瓶颈而提出的。理解 RNN 的痛点才能真正理解 Attention 的动机</li>
+                <li><strong>Lecture 22（自监督学习）</strong>：自回归语言建模（如 GPT）本质上是 RNN 语言模型的现代版本——只是将 RNN 换成了 Transformer</li>
+                <li><strong>2025 年前沿（Mamba / SSM）</strong>：状态空间模型（State Space Models）可以看作 RNN 的现代复兴——它们保留了 RNN 的递推结构但解决了长程依赖问题</li>
+            </ul>
+        </div>
+
+        <!-- ====== COMPETITIVE EDGE ====== -->
+        <div class="section" style="margin-top:48px;padding-top:32px;border-top:1px dashed var(--border);">
+            <span class="section-num">COMPETITIVE EDGE</span>
+            <h2 class="section-title">Vibe Coding 时代的竞争力</h2>
+
+            <div class="callout callout-warn">
+                <span class="callout-label">场景：AI 生成了一个 LSTM 训练代码，但 loss 在几个 epoch 后变成 NaN</span>
+                AI 生成的代码通常遗漏<strong>梯度裁剪</strong>。你需要立即识别这是梯度爆炸问题，并在 optimizer 之后添加 <code>torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)</code>。这个诊断能力来自对 Part 10 的深刻理解——知道"为什么"比知道"怎么做"更重要。
+            </div>
+
+            <div class="callout callout-warn">
+                <span class="callout-label">场景：你需要为一个长文档分类任务选择模型</span>
+                AI 可能建议"用 BERT"——但如果你的文档长度是 10000+ tokens，BERT 的 O(n&sup2;) 复杂度会让你破产。理解 RNN 的 O(n) 递推特性意味着你知道<strong>何时 LSTM 仍然是更好的选择</strong>。在资源受限或序列极长的场景下，LSTM 的递推效率无可替代。
+            </div>
+
+            <div class="callout callout-key">
+                <span class="callout-label">场景：面试中被问到"LSTM 为什么能解决梯度消失"</span>
+                标准答案涉及 cell state 的<strong>加性更新</strong>和<strong>逐元素门控</strong>。但真正有竞争力的回答会进一步指出：这本质上与 ResNet 的 skip connection 是同构的——都通过为梯度提供一条"无乘法的路径"来解决深度/时间上的梯度衰减。展示这种<strong>跨架构的洞察力</strong>，是区分"会用 API"和"真正理解"的关键。
+            </div>
+        </div>
+
+        <!-- ====== CHECKLIST ====== -->
+        <div class="section" style="margin-top:64px;padding-top:32px;border-top:2px solid var(--text);">
+            <h2 class="section-title">核心检查清单</h2>
+
+            <table>
+                <tr><th>#</th><th>检查项</th><th>对应 Slide</th></tr>
+                <tr><td>1</td><td>Vanilla RNN 的核心公式是什么？每个变量代表什么？</td><td>17</td></tr>
+                <tr><td>2</td><td>RNN 计算图的四种模式（Many-to-Many / One / Seq2Seq）各用于什么任务？</td><td>23–29</td></tr>
+                <tr><td>3</td><td>Seq2Seq 的编码器和解码器分别是什么模式？信息瓶颈是什么？</td><td>28–29</td></tr>
+                <tr><td>4</td><td>字符级语言建模的训练和测试流程有何不同？什么是"teacher forcing"？</td><td>30–40</td></tr>
+                <tr><td>5</td><td>Truncated BPTT 为什么必要？截断长度如何选择？</td><td>45–47</td></tr>
+                <tr><td>6</td><td>可解释隐藏单元研究中发现了哪四种功能性单元？</td><td>62–68</td></tr>
+                <tr><td>7</td><td>Image Captioning 中图像特征 v 如何注入 RNN？</td><td>73–78</td></tr>
+                <tr><td>8</td><td>Vanilla RNN 梯度爆炸和消失的根本原因？各自如何解决？</td><td>81–86</td></tr>
+                <tr><td>9</td><td>LSTM 的四个门分别叫什么、用什么激活函数、各自的功能是什么？</td><td>90–91</td></tr>
+                <tr><td>10</td><td>为什么 LSTM 的 cell state 更新能缓解梯度消失？</td><td>93–95</td></tr>
+                <tr><td>11</td><td>LSTM cell state 更新与 ResNet skip connection 的数学相似性？</td><td>96</td></tr>
+                <tr><td>12</td><td>GRU 与 LSTM 的主要区别？参数量的差异？</td><td>100</td></tr>
+                <tr><td>13</td><td>多层 RNN 中，信息如何在层和时间两个维度上流动？</td><td>98–99</td></tr>
+                <tr><td>14</td><td>为什么"RNN 不是只能处理序列数据"？给出两个例子。</td><td>11–13</td></tr>
+                <tr><td>15</td><td>min-char-rnn.py 为什么只有 112 行？它包含了 RNN 的哪些核心组件？</td><td>48</td></tr>
+                <tr><td>16</td><td>从 RNN 到 Attention 的进化动机是什么？</td><td>104</td></tr>
+            </table>
+
+            <div class="callout callout-tip" style="margin-top:24px;">
+                <span class="callout-label">下一步</span>
+                Lecture 16 覆盖了序列建模的基础——从 Vanilla RNN 到 LSTM/GRU，从语言建模到多模态融合。<strong>接下来是 Lecture 17（Attention）</strong>，你将看到 Attention 如何突破 Seq2Seq 的信息瓶颈，以及它如何最终演化为 Transformer——彻底改变整个深度学习版图。建议你现在动手实现一个字符级 LSTM 语言模型（用 Part 6 的代码模板），真正感受隐藏状态的魔力！
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
