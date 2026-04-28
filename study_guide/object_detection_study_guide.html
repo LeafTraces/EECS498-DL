@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lectures 13–14: Object Detection — 深度讲解</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf9f6;--text:#1a1a2e;--accent:#2563eb;--accent-light:#dbeafe;--green:#059669;--green-light:#d1fae5;--red:#dc2626;--red-light:#fee2e2;--orange:#d97706;--orange-light:#fef3c7;--purple:#7c3aed;--purple-light:#ede9fe;--teal:#0891b2;--teal-light:#ecfeff;--border:#e5e7eb;--code-bg:#1e293b;--card-shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans SC','Source Serif 4',serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:16px}
+.container{max-width:860px;margin:0 auto;padding:40px 24px 100px}
+.header{text-align:center;padding:60px 0 40px;border-bottom:2px solid var(--text);margin-bottom:48px}
+.header .tag{display:inline-block;background:var(--text);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;margin-bottom:16px}
+.header h1{font-family:'Source Serif 4',serif;font-size:2.4em;font-weight:700;line-height:1.2;margin-bottom:12px}
+.header .subtitle{font-size:1.05em;color:#666;font-style:italic}
+.toc{background:white;border:1px solid var(--border);border-radius:8px;padding:24px 28px;margin-bottom:48px;box-shadow:var(--card-shadow)}
+.toc h2{font-size:.85em;text-transform:uppercase;letter-spacing:2px;color:#999;margin-bottom:12px;font-family:'JetBrains Mono',monospace}
+.toc ol{padding-left:20px;columns:2;column-gap:32px}
+.toc li{font-size:.92em;margin-bottom:4px;break-inside:avoid}
+.toc a{color:var(--accent);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.section{margin-bottom:56px}
+.section-num{font-family:'JetBrains Mono',monospace;font-size:.8em;color:var(--accent);letter-spacing:1px}
+h2.section-title{font-family:'Source Serif 4',serif;font-size:1.7em;font-weight:700;margin:4px 0 8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.slide-ref{font-family:'JetBrains Mono',monospace;font-size:.78em;color:#999;margin-bottom:16px;display:block}
+h3{font-size:1.15em;font-weight:700;margin:28px 0 10px;color:var(--text)}
+p{margin-bottom:14px}
+.callout{border-left:4px solid;padding:14px 18px;margin:18px 0;border-radius:0 6px 6px 0;font-size:.95em}
+.callout-key{border-color:var(--accent);background:var(--accent-light)}
+.callout-why{border-color:var(--green);background:var(--green-light)}
+.callout-warn{border-color:var(--red);background:var(--red-light)}
+.callout-tip{border-color:var(--orange);background:var(--orange-light)}
+.callout-insight{border-color:var(--purple);background:var(--purple-light)}
+.callout-label{font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
+.callout-key .callout-label{color:var(--accent)}
+.callout-why .callout-label{color:var(--green)}
+.callout-warn .callout-label{color:var(--red)}
+.callout-tip .callout-label{color:var(--orange)}
+.callout-insight .callout-label{color:var(--purple)}
+pre{background:var(--code-bg);color:#e2e8f0;padding:18px 20px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.84em;line-height:1.65;margin:16px 0}
+pre code{background:none;padding:0;border-radius:0;font-size:inherit}
+code{font-family:'JetBrains Mono',monospace;background:#f1f5f9;padding:2px 6px;border-radius:3px;font-size:.88em}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:#f8fafc;font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:.5px}
+.dim{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--accent);font-weight:500}
+.diagram{background:white;border:1px solid var(--border);border-radius:8px;padding:24px;margin:20px 0;text-align:center;box-shadow:var(--card-shadow)}
+.diagram-caption{font-size:.85em;color:#666;margin-top:10px;font-style:italic}
+.versus{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.versus>div{background:white;border:1px solid var(--border);border-radius:8px;padding:16px;box-shadow:var(--card-shadow)}
+.versus h4{font-size:.95em;font-weight:700;margin-bottom:8px;text-align:center}
+strong{font-weight:700}em{font-style:italic}
+.step-card{background:white;border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin:10px 0;box-shadow:var(--card-shadow);display:flex;gap:14px;align-items:flex-start}
+.step-num{font-family:'JetBrains Mono',monospace;font-size:1.2em;font-weight:500;color:var(--accent);min-width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--accent-light);border-radius:50%}
+.step-content{flex:1}
+.step-content strong{display:block;margin-bottom:4px}
+.svg-viz{background:white;border:1px solid var(--border);border-radius:8px;padding:20px;margin:24px 0;box-shadow:var(--card-shadow)}
+.svg-viz svg{width:100%;height:auto;display:block;max-width:720px;margin:0 auto}
+.svg-caption{font-size:.88em;color:#666;margin-top:10px;font-style:italic;text-align:center}
+.formula-card{background:linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%);border:1px solid var(--border);border-radius:8px;padding:18px 24px;margin:16px 0;font-family:'Source Serif 4',serif}
+.formula-card .formula-title{font-family:'Noto Sans SC',sans-serif;font-size:.82em;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;font-weight:500}
+.formula-card .formula{font-size:1.15em;text-align:center;padding:8px 0;color:var(--text)}
+.formula-card .formula-note{font-family:'Noto Sans SC',sans-serif;font-size:.85em;color:#64748b;margin-top:10px;font-style:italic;text-align:center}
+.evo-chain{position:relative;margin:24px 0}
+.evo-node{display:grid;grid-template-columns:48px 1fr;gap:14px;margin-bottom:0;position:relative;padding-bottom:20px}
+.evo-node:last-child{padding-bottom:0}
+.evo-node:not(:last-child)::after{content:'';position:absolute;left:23px;top:48px;bottom:0;width:2px;background:linear-gradient(to bottom,var(--accent),var(--purple))}
+.evo-dot{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.65em;font-weight:500;color:#fff;z-index:1;flex-shrink:0;text-align:center;line-height:1.2}
+.evo-body{padding-top:4px}
+.evo-body h4{font-size:1.02em;font-weight:700;margin-bottom:4px}
+.evo-body p{font-size:.9em;margin-bottom:6px}
+.evo-body .perf{font-family:'JetBrains Mono',monospace;font-size:.82em;padding:2px 8px;border-radius:3px;display:inline-block;margin-top:2px}
+.compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.compare-item{background:white;border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;box-shadow:var(--card-shadow)}
+.compare-item h5{font-size:.92em;font-weight:700;margin-bottom:6px}
+.compare-item p{font-size:.85em;color:#64748b;margin:0;line-height:1.5}
+ul{margin:8px 0 14px 20px}ul li{margin-bottom:4px}
+ol{margin:8px 0 14px 20px}ol li{margin-bottom:6px}
+.tabs{display:flex;gap:4px;margin-bottom:0;border-bottom:2px solid var(--border);overflow-x:auto}
+.tab{padding:10px 16px;cursor:pointer;border:none;background:#f8fafc;border-radius:6px 6px 0 0;font-family:inherit;font-size:.88em;font-weight:500;color:#64748b;transition:all .2s;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tab:hover{background:#f1f5f9;color:var(--text)}
+.tab.active{background:white;color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{background:white;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:20px 22px;box-shadow:var(--card-shadow)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+.four-col{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.four-col>div{background:white;border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;box-shadow:var(--card-shadow);font-size:.88em}
+.four-col h5{font-weight:700;margin-bottom:4px}
+@media(max-width:640px){.header h1{font-size:1.7em}.toc ol{columns:1}.versus{grid-template-columns:1fr}.four-col{grid-template-columns:1fr 1fr}.container{padding:24px 16px 80px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <div class="tag">EECS 498.008 / 598.008 &bull; TA 深度讲解</div>
+  <h1>Lectures 13–14: Object Detection</h1>
+  <div class="subtitle">Justin Johnson — 从 R-CNN 到 Anchor-Free 检测器 — 让模型不仅知道"是什么"还知道"在哪里"</div>
+</div>
+
+<nav class="toc">
+  <h2>目录 Contents</h2>
+  <ol>
+    <li><a href="#s1">全局定位与先修知识</a></li>
+    <li><a href="#s2">Transfer Learning</a></li>
+    <li><a href="#s3">Object Detection 任务定义</a></li>
+    <li><a href="#s4">评估基础：IoU / NMS / mAP</a></li>
+    <li><a href="#s5">R-CNN：朴素但奠基性的方案</a></li>
+    <li><a href="#s6">Fast R-CNN：共享计算</a></li>
+    <li><a href="#s7">RoI Pool 与 RoI Align</a></li>
+    <li><a href="#s8">Faster R-CNN：学习 Region Proposals</a></li>
+    <li><a href="#s9">Feature Pyramid Network（FPN）</a></li>
+    <li><a href="#s10">Single-Stage 检测器</a></li>
+    <li><a href="#s11">架构演进总图与对比</a></li>
+    <li><a href="#s12">核心检查清单</a></li>
+  </ol>
+</nav>
+
+<!-- ====== SECTION 1 ====== -->
+<div class="section" id="s1">
+  <span class="section-num">PART 01</span>
+  <h2 class="section-title">全局定位与先修知识</h2>
+  <span class="slide-ref">L13 Slides 9–11 / FA2019 Slides 5–7</span>
+
+  <p>到目前为止，你学过的所有任务都是 <strong>Image Classification</strong>——输入一张图，输出一个类别标签。但现实世界的视觉理解远不止于此。Justin 在这两讲中拓展到四类计算机视觉任务：</p>
+
+  <div class="four-col">
+    <div style="border-top:3px solid var(--accent)">
+      <h5>Classification</h5>
+      <p>整张图一个标签<br>无空间信息</p>
+    </div>
+    <div style="border-top:3px solid var(--green)">
+      <h5>Semantic Seg.</h5>
+      <p>逐像素分类<br>无物体概念</p>
+    </div>
+    <div style="border-top:3px solid var(--orange);font-weight:700">
+      <h5>Object Detection</h5>
+      <p>多物体 + 边界框<br><strong>本讲重点</strong></p>
+    </div>
+    <div style="border-top:3px solid var(--purple)">
+      <h5>Instance Seg.</h5>
+      <p>逐像素 + 物体级别<br>下一讲</p>
+    </div>
+  </div>
+
+  <div class="callout callout-key">
+    <span class="callout-label">核心挑战：为什么检测比分类难得多？</span>
+    <p>Object Detection 面临三大挑战：(1) <strong>可变数量的输出</strong>——一张图可能有 1 个物体也可能有 50 个，输出维度不固定；(2) <strong>两种输出类型</strong>——既要预测"是什么"（分类），又要预测"在哪里"（回归）；(3) <strong>大图像</strong>——分类通常用 224×224，检测需要 ~800×600 才能看到小物体。</p>
+  </div>
+</div>
+
+<!-- ====== SECTION 2 ====== -->
+<div class="section" id="s2">
+  <span class="section-num">PART 02</span>
+  <h2 class="section-title">Transfer Learning：检测的基石</h2>
+  <span class="slide-ref">L13 Slides 12–29（WI2022 新增）</span>
+
+  <p>WI2022 版本在进入检测之前，先花了大量篇幅讲 Transfer Learning——因为 <strong>几乎所有现代检测器都依赖在 ImageNet 上预训练的 backbone</strong>。</p>
+
+  <div class="versus">
+    <div style="border-top:3px solid var(--teal)">
+      <h4>Feature Extraction（特征提取）</h4>
+      <p style="font-size:.9em">冻结预训练 CNN 的所有参数，只训练最后一层线性分类器。速度快、数据需求少，但精度有上限。</p>
+    </div>
+    <div style="border-top:3px solid var(--accent)">
+      <h4>Fine-Tuning（微调）</h4>
+      <p style="font-size:.9em">用预训练权重初始化整个网络，然后在新任务上继续训练所有层。需要更多数据和计算，但精度更高。</p>
+      <p style="font-size:.85em;color:var(--orange);margin-top:6px"><strong>Trick：</strong>用更小的学习率（原始的 1/10），先做 Feature Extraction 再 Fine-Tune，BN 层用 test mode。</p>
+    </div>
+  </div>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">Architecture Matters（Slide 23–24）</span>
+    <p>Justin 展示了一组惊人的数据：COCO 检测 mAP 从 DPM（Pre-DL 时代）的 5，到 Fast R-CNN + AlexNet 的 15，到 Faster R-CNN + ResNet-50 的 29，到 Mask R-CNN + ResNeXt-152 的 46。<strong>几乎所有提升都来自更好的 backbone 架构</strong>——同一个检测框架，换一个更强的 backbone，性能就大幅提升。这就是为什么 Transfer Learning 如此重要。</p>
+  </div>
+</div>
+
+<!-- ====== SECTION 3 ====== -->
+<div class="section" id="s3">
+  <span class="section-num">PART 03</span>
+  <h2 class="section-title">Object Detection 任务定义</h2>
+  <span class="slide-ref">L13 Slides 32–38 / FA2019 Slides 8–16</span>
+
+  <p><strong>输入：</strong>一张 RGB 图像。<strong>输出：</strong>一个检测集合——每个检测包含一个类别标签（从预定义类别集中选）和一个边界框（x, y, w, h 四个数）。</p>
+
+  <h3>Bounding Box 的表示方式</h3>
+  <p>边界框通常是<strong>轴对齐的</strong>（axis-aligned），用 (x, y, w, h) 或 (x₁, y₁, x₂, y₂) 表示。WI2022 还区分了 <strong>Modal Detection</strong>（只框可见部分）和 <strong>Amodal Detection</strong>（框整个物体包括被遮挡的部分）——实际中绝大多数数据集用 modal detection。</p>
+
+  <h3>从单物体到多物体：关键的跳跃</h3>
+  <p>单物体检测很简单——加两个 head（分类 head 用 softmax loss，回归 head 用 L2 loss），做 <strong>Multitask Learning</strong>。但多物体检测需要输出<strong>可变数量</strong>的框——这导致了整个检测架构设计的复杂性。</p>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">为什么不能用滑动窗口？</span>
+    <p>一个直觉的想法是"在图像上滑动一个窗口，每个位置用 CNN 分类"。但一张 800×600 的图有 ~5800 万个可能的框（所有位置×所有大小的组合）！即使每个框只需 1ms，也要 16 小时处理一张图。所以我们需要 <strong>Region Proposals</strong>——先用快速方法找到~2000 个"可能包含物体"的候选框。</p>
+  </div>
+</div>
+
+<!-- ====== SECTION 4 ====== -->
+<div class="section" id="s4">
+  <span class="section-num">PART 04</span>
+  <h2 class="section-title">评估基础：IoU / NMS / mAP</h2>
+  <span class="slide-ref">L13 Slides 39–50 / L14 Slides 98–109 / FA2019 Slides 35–57</span>
+
+  <p>检测器的评估需要三个关键工具。让我们逐一讲解。</p>
+
+  <h3>① Intersection over Union（IoU）</h3>
+
+  <div class="formula-card">
+    <div class="formula-title">IoU（Jaccard Similarity）</div>
+    <div class="formula">IoU = Area(Intersection) / Area(Union)</div>
+    <div class="formula-note">IoU > 0.5 = "decent"，IoU > 0.7 = "pretty good"，IoU > 0.9 = "almost perfect"</div>
+  </div>
+
+  <p>IoU 衡量两个框的重叠程度，范围从 0（完全不重叠）到 1（完全重合）。它是检测评估的<strong>原子操作</strong>——后续的 NMS 和 mAP 都以它为基础。</p>
+
+  <h3>② Non-Max Suppression（NMS）</h3>
+
+  <p>检测器通常在同一个物体附近产生多个重叠的框。NMS 用贪心策略去除冗余：</p>
+
+  <div class="step-card"><div class="step-num">1</div><div class="step-content"><strong>选择分数最高的框</strong>保留它</div></div>
+  <div class="step-card"><div class="step-num">2</div><div class="step-content"><strong>计算该框与所有剩余框的 IoU</strong>删除 IoU > 阈值（如 0.7）的框</div></div>
+  <div class="step-card"><div class="step-num">3</div><div class="step-content"><strong>重复</strong>直到没有剩余框</div></div>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">NMS 的局限</span>
+    当物体高度重叠（如人群场景），NMS 可能误删正确的检测框——这是一个至今没有完美解决方案的问题。
+  </div>
+
+  <h3>③ Mean Average Precision（mAP）</h3>
+
+  <p>mAP 是检测器最标准的评估指标。完整流程：</p>
+
+  <ol>
+    <li>对所有测试图运行检测器（带 NMS）</li>
+    <li>对<strong>每个类别</strong>，按分数从高到低排序所有检测框：
+      <ul>
+        <li>每个检测框与 GT 比较——若 IoU > 阈值且该 GT 尚未被匹配，标为 TP（True Positive）</li>
+        <li>否则标为 FP（False Positive）</li>
+        <li>逐步计算 Precision 和 Recall，画出 PR 曲线</li>
+      </ul>
+    </li>
+    <li><strong>AP</strong> = PR 曲线下面积（衡量单个类别的检测质量）</li>
+    <li><strong>mAP</strong> = 所有类别 AP 的平均值</li>
+    <li><strong>COCO mAP</strong> = 在 IoU 阈值 0.5, 0.55, ..., 0.95 上分别计算 mAP，再取平均——更严格</li>
+  </ol>
+
+  <div class="callout callout-tip">
+    <span class="callout-label">如何获得 AP = 1.0？</span>
+    命中所有 GT 框（IoU > 阈值），且没有任何 FP 排在 TP 前面——即所有预测都是正确的，且没有漏检。
+  </div>
+</div>
+
+<!-- ====== SECTION 5 ====== -->
+<div class="section" id="s5">
+  <span class="section-num">PART 05</span>
+  <h2 class="section-title">R-CNN：朴素但奠基性的方案</h2>
+  <span class="slide-ref">L13 Slides 51–67 / FA2019 Slides 27–34</span>
+
+  <p>R-CNN（Region-based CNN，Girshick et al. 2014）是第一个将深度学习应用于目标检测的里程碑工作。</p>
+
+  <div class="step-card"><div class="step-num">1</div><div class="step-content"><strong>生成 Region Proposals（~2000 个）</strong>使用 Selective Search 等启发式方法</div></div>
+  <div class="step-card"><div class="step-num">2</div><div class="step-content"><strong>Resize 每个 region 到 224×224</strong>直接 warp 到固定大小</div></div>
+  <div class="step-card"><div class="step-num">3</div><div class="step-content"><strong>对每个 region 独立跑一遍 CNN</strong>提取特征并分类 + 回归 bbox transform</div></div>
+  <div class="step-card"><div class="step-num">4</div><div class="step-content"><strong>NMS 去重</strong>输出最终检测结果</div></div>
+
+  <h3>Bounding Box Regression 的参数化（Slide 33）</h3>
+
+  <p>R-CNN 不直接预测框坐标，而是预测一个 <strong>transform</strong>——从 proposal box 到 GT box 的变换：</p>
+
+  <div class="formula-card">
+    <div class="formula-title">Box Transform</div>
+    <div class="formula">
+      b<sub>x</sub> = p<sub>x</sub> + p<sub>w</sub> · t<sub>x</sub> &emsp; b<sub>y</sub> = p<sub>y</sub> + p<sub>h</sub> · t<sub>y</sub><br>
+      b<sub>w</sub> = p<sub>w</sub> · exp(t<sub>w</sub>) &emsp; b<sub>h</sub> = p<sub>h</sub> · exp(t<sub>h</sub>)
+    </div>
+    <div class="formula-note">p = proposal box, t = 预测的 transform, b = 输出 box。平移用相对值，缩放用 log-space——确保缩放始终为正。</div>
+  </div>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">R-CNN 的致命问题：慢！</span>
+    2000 个 region × 每个跑一遍完整的 CNN = ~2000 次前向传播。这些 region 大量重叠，导致巨大的重复计算。R-CNN 处理一张图需要 ~47 秒——完全无法实际部署。
+  </div>
+</div>
+
+<!-- ====== SECTION 6 ====== -->
+<div class="section" id="s6">
+  <span class="section-num">PART 06</span>
+  <h2 class="section-title">Fast R-CNN：共享计算</h2>
+  <span class="slide-ref">L14 Slides 10–48 / FA2019 Slides 58–70</span>
+
+  <p>Fast R-CNN（Girshick, 2015）的核心改进极其精妙：<strong>把 CNN 从"每个 region 独立跑"变成"整张图只跑一次"</strong>。</p>
+
+  <div class="svg-viz">
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0,0 8,3 0,6" fill="#64748b"/></marker></defs>
+      <!-- Input -->
+      <rect x="30" y="90" width="90" height="70" rx="8" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+      <text x="75" y="130" text-anchor="middle" font-size="11" font-weight="bold" fill="#059669">Input</text>
+      <!-- Backbone -->
+      <rect x="160" y="80" width="120" height="90" rx="8" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+      <text x="220" y="118" text-anchor="middle" font-size="11" font-weight="bold" fill="#2563eb">Backbone</text>
+      <text x="220" y="135" text-anchor="middle" font-size="9" fill="#3b82f6">整图只跑一次</text>
+      <text x="220" y="150" text-anchor="middle" font-size="9" fill="#3b82f6">ResNet / VGG</text>
+      <line x1="120" y1="125" x2="158" y2="125" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
+      <!-- Feature map -->
+      <rect x="320" y="90" width="100" height="70" rx="8" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.5"/>
+      <text x="370" y="122" text-anchor="middle" font-size="10" font-weight="bold" fill="#92400e">Feature Map</text>
+      <text x="370" y="138" text-anchor="middle" font-size="9" fill="#92400e">512×20×15</text>
+      <line x1="280" y1="125" x2="318" y2="125" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
+      <!-- RoI crop -->
+      <rect x="460" y="60" width="100" height="40" rx="6" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1.5"/>
+      <text x="510" y="84" text-anchor="middle" font-size="10" font-weight="bold" fill="#7c3aed">RoI Crop</text>
+      <rect x="460" y="110" width="100" height="40" rx="6" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1.5"/>
+      <text x="510" y="134" text-anchor="middle" font-size="10" font-weight="bold" fill="#7c3aed">RoI Crop</text>
+      <rect x="460" y="160" width="100" height="40" rx="6" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1.5"/>
+      <text x="510" y="184" text-anchor="middle" font-size="10" font-weight="bold" fill="#7c3aed">RoI Crop</text>
+      <line x1="420" y1="110" x2="458" y2="80" stroke="#7c3aed" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="420" y1="125" x2="458" y2="130" stroke="#7c3aed" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="420" y1="140" x2="458" y2="180" stroke="#7c3aed" stroke-width="1" marker-end="url(#arr)"/>
+      <!-- Per-region heads -->
+      <rect x="600" y="60" width="90" height="40" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+      <text x="645" y="78" text-anchor="middle" font-size="9" font-weight="bold" fill="#dc2626">Class+Box</text>
+      <rect x="600" y="110" width="90" height="40" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+      <text x="645" y="128" text-anchor="middle" font-size="9" font-weight="bold" fill="#dc2626">Class+Box</text>
+      <rect x="600" y="160" width="90" height="40" rx="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+      <text x="645" y="178" text-anchor="middle" font-size="9" font-weight="bold" fill="#dc2626">Class+Box</text>
+      <line x1="560" y1="80" x2="598" y2="80" stroke="#64748b" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="560" y1="130" x2="598" y2="130" stroke="#64748b" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="560" y1="180" x2="598" y2="180" stroke="#64748b" stroke-width="1" marker-end="url(#arr)"/>
+      <!-- Labels -->
+      <text x="220" y="195" text-anchor="middle" font-size="9" fill="#999" font-style="italic">大部分计算在此（共享）</text>
+      <text x="510" y="220" text-anchor="middle" font-size="9" fill="#999" font-style="italic">从特征图上裁剪</text>
+      <text x="645" y="220" text-anchor="middle" font-size="9" fill="#999" font-style="italic">轻量级 per-region head</text>
+    </svg>
+    <div class="svg-caption">Fast R-CNN：Backbone 只跑一次（蓝色），然后从共享的 Feature Map 上裁剪每个 RoI 的特征（紫色），再用轻量级网络分类 + 回归</div>
+  </div>
+
+  <div class="callout callout-why">
+    <span class="callout-label">为什么这么快？</span>
+    R-CNN：2000 个 region × 完整 CNN = 2000 次前向传播。Fast R-CNN：1 次完整 CNN + 2000 次轻量级 per-region head。大部分计算在 backbone 中发生，且只做一次——所有 region 共享同一个 feature map。
+  </div>
+</div>
+
+<!-- ====== SECTION 7 ====== -->
+<div class="section" id="s7">
+  <span class="section-num">PART 07</span>
+  <h2 class="section-title">RoI Pool 与 RoI Align</h2>
+  <span class="slide-ref">L14 Slides 30–47 / FA2019 Slides 71–89</span>
+
+  <p>"从特征图上裁剪一个 region"看似简单，实际上有微妙的工程细节。这里有两种方案：</p>
+
+  <div class="tabs" id="roi-tabs">
+    <button class="tab active" onclick="sw('roi-tabs','roi-panes',0)">RoI Pool</button>
+    <button class="tab" onclick="sw('roi-tabs','roi-panes',1)">RoI Align</button>
+    <button class="tab" onclick="sw('roi-tabs','roi-panes',2)">对比</button>
+  </div>
+  <div class="tab-content" id="roi-panes">
+    <div class="tab-pane active">
+      <h4>RoI Pool（Fast R-CNN, 2015）</h4>
+      <ol>
+        <li>将 proposal 坐标投影到特征图上</li>
+        <li><strong>Snap</strong> 到最近的网格单元（取整）</li>
+        <li>将 snapped 区域划分为 H×W 的子区域（如 7×7）</li>
+        <li>在每个子区域内做 max pooling</li>
+      </ol>
+      <p style="color:var(--red);font-size:.9em;margin-top:8px"><strong>问题：</strong>Snap 导致轻微错位（misalignment）；不同大小的 region 被划分成大小不一的子区域，不优雅。</p>
+    </div>
+    <div class="tab-pane">
+      <h4>RoI Align（Mask R-CNN, He et al. 2017）</h4>
+      <ol>
+        <li>将 proposal 坐标投影到特征图上——<strong>不 snap</strong>，保留浮点坐标</li>
+        <li>将区域划分为 H×W 的等大子区域（坐标可能不在网格上）</li>
+        <li>在每个子区域内均匀采样点，用<strong>双线性插值（bilinear interpolation）</strong>计算每个采样点的特征</li>
+        <li>在每个子区域内做 max pooling</li>
+      </ol>
+      <p>双线性插值公式：<code>f(x,y) = Σ_{i,j} f(i,j) · max(0, 1-|x-i|) · max(0, 1-|y-j|)</code></p>
+      <p style="color:var(--green);font-size:.9em;margin-top:8px"><strong>关键优势：</strong>完全可微分！梯度可以流回到四个相邻网格点。而且消除了 snap 导致的错位问题。</p>
+    </div>
+    <div class="tab-pane">
+      <table>
+        <tr><th></th><th>RoI Pool</th><th>RoI Align</th></tr>
+        <tr><td>坐标处理</td><td>Snap 到网格（取整）</td><td>保留浮点坐标</td></tr>
+        <tr><td>采样方式</td><td>直接取网格值</td><td>双线性插值</td></tr>
+        <tr><td>可微分性</td><td>部分（max pool 可微，snap 不可微）</td><td>完全可微分</td></tr>
+        <tr><td>精度</td><td>有错位</td><td>无错位</td></tr>
+        <tr><td>实际使用</td><td>已被淘汰</td><td><strong>标准做法</strong></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SECTION 8 ====== -->
+<div class="section" id="s8">
+  <span class="section-num">PART 08</span>
+  <h2 class="section-title">Faster R-CNN：学习 Region Proposals</h2>
+  <span class="slide-ref">L14 Slides 51–72 / FA2019 Slides 94–103</span>
+
+  <p>Fast R-CNN 把瓶颈从 CNN 前向传播转移到了 Region Proposal 上——Selective Search 在 CPU 上运行，成了新的速度瓶颈。Faster R-CNN 的解决方案：<strong>用神经网络学习 proposals</strong>。</p>
+
+  <h3>Region Proposal Network（RPN）</h3>
+
+  <p>RPN 在 backbone 的特征图上工作。核心思想是<strong>Anchor Box</strong>——在特征图的每个位置放置 K 个预定义大小/比例的框，对每个框预测两件事：</p>
+
+  <div class="versus">
+    <div style="border-top:3px solid var(--accent)">
+      <h4>是否包含物体？</h4>
+      <p style="font-size:.9em">Binary classification（object / not object）。输出形状：<code>2K × H × W</code></p>
+    </div>
+    <div style="border-top:3px solid var(--green)">
+      <h4>Box Transform</h4>
+      <p style="font-size:.9em">从 anchor 到真实框的变换。输出形状：<code>4K × H × W</code></p>
+    </div>
+  </div>
+
+  <h3>Anchor 的正负标签分配（Slides 65–68）</h3>
+  <table>
+    <tr><th>类型</th><th>条件</th><th>训练中的作用</th></tr>
+    <tr><td style="color:var(--green)"><strong>Positive</strong></td><td>IoU ≥ 0.7（与某个 GT 框）<br>或：与某个 GT 框 IoU 最高的那个</td><td>训练分类 + 回归</td></tr>
+    <tr><td style="color:var(--red)"><strong>Negative</strong></td><td>IoU < 0.3（与所有 GT 框）</td><td>只训练分类，不训练回归</td></tr>
+    <tr><td style="color:#999"><strong>Neutral</strong></td><td>0.3 ≤ IoU < 0.7</td><td>完全忽略，不参与训练</td></tr>
+  </table>
+
+  <h3>Faster R-CNN 的四个 Loss</h3>
+
+  <div class="compare-grid">
+    <div class="compare-item" style="border-top:3px solid var(--accent)"><h5>RPN 分类</h5><p>anchor 是否包含物体</p></div>
+    <div class="compare-item" style="border-top:3px solid var(--accent)"><h5>RPN 回归</h5><p>anchor → proposal 的 transform</p></div>
+    <div class="compare-item" style="border-top:3px solid var(--green)"><h5>Detection 分类</h5><p>proposal 的具体类别</p></div>
+    <div class="compare-item" style="border-top:3px solid var(--green)"><h5>Detection 回归</h5><p>proposal → final box 的 transform</p></div>
+  </div>
+
+  <div class="callout callout-key">
+    <span class="callout-label">Two-Stage 架构总结</span>
+    <p>Faster R-CNN 是一个 <strong>Two-Stage</strong> 检测器。<strong>第一阶段</strong>（per-image）：backbone 提取特征 + RPN 生成 proposals。<strong>第二阶段</strong>（per-region）：RoI Align 裁剪特征 + 分类 + bbox 回归。这种"先粗筛再精分"的策略在精度上长期领先。</p>
+  </div>
+</div>
+
+<!-- ====== SECTION 9 ====== -->
+<div class="section" id="s9">
+  <span class="section-num">PART 09</span>
+  <h2 class="section-title">Feature Pyramid Network（FPN）</h2>
+  <span class="slide-ref">L14 Slides 73–83（WI2022 新增）</span>
+
+  <p>检测中的一个核心挑战是<strong>尺度变化</strong>——同一张图中可能同时有很大和很小的物体。CNN 的高层特征分辨率低（适合检测大物体），低层特征分辨率高但语义弱（适合检测小物体）。FPN 的解决方案：<strong>自顶向下融合</strong>。</p>
+
+  <div class="svg-viz">
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0,0 8,3 0,6" fill="#2563eb"/></marker>
+      <marker id="arr3" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0,0 8,3 0,6" fill="#059669"/></marker></defs>
+      <!-- Bottom-up (backbone) -->
+      <rect x="60" y="210" width="110" height="40" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+      <text x="115" y="234" text-anchor="middle" font-size="10" font-weight="bold" fill="#2563eb">Stage 2 (56²)</text>
+      <rect x="60" y="155" width="110" height="40" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+      <text x="115" y="179" text-anchor="middle" font-size="10" font-weight="bold" fill="#2563eb">Stage 3 (28²)</text>
+      <rect x="60" y="100" width="110" height="40" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+      <text x="115" y="124" text-anchor="middle" font-size="10" font-weight="bold" fill="#2563eb">Stage 4 (14²)</text>
+      <rect x="60" y="45" width="110" height="40" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+      <text x="115" y="69" text-anchor="middle" font-size="10" font-weight="bold" fill="#2563eb">Stage 5 (7²)</text>
+      <text x="115" y="25" text-anchor="middle" font-size="10" fill="#999">Bottom-up</text>
+      <!-- Arrows up -->
+      <line x1="115" y1="210" x2="115" y2="197" stroke="#93c5fd" stroke-width="1" marker-end="url(#arr2)"/>
+      <line x1="115" y1="155" x2="115" y2="142" stroke="#93c5fd" stroke-width="1" marker-end="url(#arr2)"/>
+      <line x1="115" y1="100" x2="115" y2="87" stroke="#93c5fd" stroke-width="1" marker-end="url(#arr2)"/>
+      <!-- Top-down path -->
+      <rect x="310" y="45" width="110" height="40" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+      <text x="365" y="69" text-anchor="middle" font-size="10" font-weight="bold" fill="#059669">P5 (7²)</text>
+      <rect x="310" y="100" width="110" height="40" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+      <text x="365" y="124" text-anchor="middle" font-size="10" font-weight="bold" fill="#059669">P4 (14²)</text>
+      <rect x="310" y="155" width="110" height="40" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+      <text x="365" y="179" text-anchor="middle" font-size="10" font-weight="bold" fill="#059669">P3 (28²)</text>
+      <rect x="310" y="210" width="110" height="40" rx="6" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+      <text x="365" y="234" text-anchor="middle" font-size="10" font-weight="bold" fill="#059669">P2 (56²)</text>
+      <text x="365" y="25" text-anchor="middle" font-size="10" fill="#999">Top-down + lateral</text>
+      <!-- Arrows down -->
+      <line x1="365" y1="85" x2="365" y2="98" stroke="#6ee7b7" stroke-width="1" marker-end="url(#arr3)"/>
+      <text x="390" y="95" font-size="8" fill="#059669">2× up</text>
+      <line x1="365" y1="140" x2="365" y2="153" stroke="#6ee7b7" stroke-width="1" marker-end="url(#arr3)"/>
+      <text x="390" y="150" font-size="8" fill="#059669">2× up</text>
+      <line x1="365" y1="195" x2="365" y2="208" stroke="#6ee7b7" stroke-width="1" marker-end="url(#arr3)"/>
+      <text x="390" y="205" font-size="8" fill="#059669">2× up</text>
+      <!-- Lateral connections -->
+      <line x1="170" y1="65" x2="308" y2="65" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#arr2)"/>
+      <line x1="170" y1="120" x2="308" y2="120" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#arr2)"/>
+      <line x1="170" y1="175" x2="308" y2="175" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#arr2)"/>
+      <line x1="170" y1="230" x2="308" y2="230" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#arr2)"/>
+      <text x="230" y="110" text-anchor="middle" font-size="8" fill="#94a3b8">1×1 conv +</text>
+      <!-- Detectors -->
+      <rect x="480" y="45" width="80" height="40" rx="6" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.5"/>
+      <text x="520" y="69" text-anchor="middle" font-size="9" font-weight="bold" fill="#92400e">Detect</text>
+      <rect x="480" y="100" width="80" height="40" rx="6" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.5"/>
+      <text x="520" y="124" text-anchor="middle" font-size="9" font-weight="bold" fill="#92400e">Detect</text>
+      <rect x="480" y="155" width="80" height="40" rx="6" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.5"/>
+      <text x="520" y="179" text-anchor="middle" font-size="9" font-weight="bold" fill="#92400e">Detect</text>
+      <rect x="480" y="210" width="80" height="40" rx="6" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.5"/>
+      <text x="520" y="234" text-anchor="middle" font-size="9" font-weight="bold" fill="#92400e">Detect</text>
+      <line x1="420" y1="65" x2="478" y2="65" stroke="#64748b" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="420" y1="120" x2="478" y2="120" stroke="#64748b" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="420" y1="175" x2="478" y2="175" stroke="#64748b" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="420" y1="230" x2="478" y2="230" stroke="#64748b" stroke-width="1" marker-end="url(#arr)"/>
+      <!-- Annotations -->
+      <text x="620" y="60" font-size="9" fill="#999">大物体</text>
+      <text x="620" y="240" font-size="9" fill="#999">小物体</text>
+      <line x1="620" y1="68" x2="620" y2="225" stroke="#e5e7eb" stroke-width="1" marker-end="url(#arr)"/>
+    </svg>
+    <div class="svg-caption">FPN：每一层 P_i 既有高层语义信息（通过 top-down 路径），又有低层的空间细节（通过 lateral connection）</div>
+  </div>
+
+  <div class="callout callout-why">
+    <span class="callout-label">FPN 为什么有效？</span>
+    <p>低层特征（Stage 2–3）空间分辨率高但语义弱——它"看得清"小物体但"不懂"它们是什么。高层特征（Stage 4–5）语义强但分辨率低。FPN 通过 top-down 路径把高层的语义信息传递到低层，让每个尺度都同时拥有高分辨率和强语义——这就是它在小物体检测上效果显著的原因。</p>
+  </div>
+</div>
+
+<!-- ====== SECTION 10 ====== -->
+<div class="section" id="s10">
+  <span class="section-num">PART 10</span>
+  <h2 class="section-title">Single-Stage 检测器</h2>
+  <span class="slide-ref">L14 Slides 84–97 / FA2019 Slides 104–106</span>
+
+  <p>Two-stage 检测器（Faster R-CNN）精度高但速度受限于第二阶段的 per-region 处理。<strong>Single-stage 检测器直接从特征图预测类别和框，跳过第二阶段。</strong></p>
+
+  <div class="tabs" id="ss-tabs">
+    <button class="tab active" onclick="sw('ss-tabs','ss-panes',0)">RetinaNet（Anchor-based）</button>
+    <button class="tab" onclick="sw('ss-tabs','ss-panes',1)">FCOS（Anchor-free）</button>
+  </div>
+  <div class="tab-content" id="ss-panes">
+    <div class="tab-pane active">
+      <h4>RetinaNet（Lin et al., ICCV 2017）</h4>
+      <p>和 RPN 的结构几乎一样，但不再是"object / not object"的二分类，而是直接做 <strong>C+1 类分类</strong>（C 个物体类别 + 1 个背景类别）。</p>
+      <p><strong>核心问题：类别不均衡</strong>——绝大多数 anchor 是背景（negative），真正包含物体的 anchor 很少。大量 easy negative 会主导 loss。</p>
+      <p><strong>解决方案：Focal Loss</strong>——对 easy examples 降低 loss 权重，让模型更关注 hard examples。这让 single-stage 检测器首次在精度上接近 two-stage。</p>
+      <p>实际中 RetinaNet 也使用 FPN 处理多尺度。</p>
+    </div>
+    <div class="tab-pane">
+      <h4>FCOS（Tian et al., ICCV 2019）——Anchor-Free</h4>
+      <p>FCOS 完全不使用 anchor box，而是对特征图上的<strong>每个点</strong>直接预测：</p>
+      <ol>
+        <li><strong>类别分数</strong>：该点是否落在某个 GT 框内？如果是，属于哪个类别？ → <code>C × H × W</code></li>
+        <li><strong>到框边界的距离</strong>：预测到 GT 框的上、下、左、右四个边的距离 (L, R, T, B) → <code>4 × H × W</code></li>
+        <li><strong>Centerness</strong>：衡量该点离框中心有多近 → <code>1 × H × W</code></li>
+      </ol>
+      <div class="formula-card" style="margin:12px 0">
+        <div class="formula-title">Centerness Score</div>
+        <div class="formula">centerness = √(min(L,R)/max(L,R) · min(T,B)/max(T,B))</div>
+        <div class="formula-note">框中心 = 1，框边缘 = 0。用于抑制远离中心的低质量检测。</div>
+      </div>
+      <p>测试时每个点的最终置信度 = class score × centerness。FCOS 也使用 FPN 处理多尺度。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SECTION 11 ====== -->
+<div class="section" id="s11">
+  <span class="section-num">PART 11</span>
+  <h2 class="section-title">架构演进总图与对比</h2>
+
+  <div class="evo-chain">
+    <div class="evo-node">
+      <div class="evo-dot" style="background:#94a3b8;font-size:.6em">2014</div>
+      <div class="evo-body">
+        <h4>R-CNN</h4>
+        <p>~2000 个 region 各自跑一遍 CNN。Region Proposals 用 Selective Search。</p>
+        <span class="perf" style="background:#fee2e2;color:#991b1b">~47s / 图 &emsp; 训练不 end-to-end</span>
+      </div>
+    </div>
+    <div class="evo-node">
+      <div class="evo-dot" style="background:#3b82f6;font-size:.6em">2015</div>
+      <div class="evo-body">
+        <h4>Fast R-CNN</h4>
+        <p>整图跑一次 backbone + RoI Pool 裁剪。速度大幅提升，可 end-to-end 训练。</p>
+        <span class="perf" style="background:#fef3c7;color:#92400e">瓶颈转移到 Selective Search</span>
+      </div>
+    </div>
+    <div class="evo-node">
+      <div class="evo-dot" style="background:#2563eb;font-size:.6em">2015</div>
+      <div class="evo-body">
+        <h4>Faster R-CNN</h4>
+        <p>RPN 替代 Selective Search。全流程 GPU 可训练。Two-stage 经典架构。</p>
+        <span class="perf" style="background:#d1fae5;color:#065f46">~0.2s / 图 &emsp; 长期精度冠军</span>
+      </div>
+    </div>
+    <div class="evo-node">
+      <div class="evo-dot" style="background:#059669;font-size:.6em">2017</div>
+      <div class="evo-body">
+        <h4>FPN + Faster R-CNN</h4>
+        <p>多尺度特征融合，显著提升小物体检测。成为实际部署标准配置。</p>
+        <span class="perf" style="background:#d1fae5;color:#065f46">+3–5 mAP over plain Faster R-CNN</span>
+      </div>
+    </div>
+    <div class="evo-node">
+      <div class="evo-dot" style="background:#7c3aed;font-size:.55em">2017<br>+</div>
+      <div class="evo-body">
+        <h4>RetinaNet / FCOS / YOLO ...</h4>
+        <p>Single-stage 检测器：跳过 per-region 处理，直接从特征图预测。速度更快，精度接近。</p>
+        <span class="perf" style="background:#dbeafe;color:#1e40af">更快 &emsp; Focal Loss 解决类别不均衡</span>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>方法</th><th>阶段</th><th>Proposals</th><th>Anchor?</th><th>核心创新</th></tr>
+    <tr><td>R-CNN</td><td>Two-stage</td><td>Selective Search</td><td>—</td><td>首次将 CNN 用于检测</td></tr>
+    <tr><td>Fast R-CNN</td><td>Two-stage</td><td>Selective Search</td><td>—</td><td>共享 backbone + RoI Pool</td></tr>
+    <tr><td>Faster R-CNN</td><td>Two-stage</td><td>RPN (学习的)</td><td>Yes</td><td>端到端可训练</td></tr>
+    <tr><td>RetinaNet</td><td>Single-stage</td><td>— (直接预测)</td><td>Yes</td><td>Focal Loss</td></tr>
+    <tr><td>FCOS</td><td>Single-stage</td><td>— (直接预测)</td><td><strong>No</strong></td><td>Anchor-free + Centerness</td></tr>
+  </table>
+</div>
+
+<!-- ====== SECTION 12 ====== -->
+<div class="section" id="s12">
+  <span class="section-num">PART 12</span>
+  <h2 class="section-title">核心检查清单</h2>
+
+  <table>
+    <tr><th>#</th><th>检查项</th></tr>
+    <tr><td>1</td><td>Feature Extraction vs Fine-Tuning 的区别和适用场景？</td></tr>
+    <tr><td>2</td><td>Object Detection 的三大挑战是什么？</td></tr>
+    <tr><td>3</td><td>IoU 的计算公式？IoU > 0.5/0.7/0.9 分别意味着什么？</td></tr>
+    <tr><td>4</td><td>NMS 的完整算法流程？它在拥挤场景中的局限？</td></tr>
+    <tr><td>5</td><td>mAP 的完整计算流程？COCO mAP 和 mAP@0.5 有什么区别？</td></tr>
+    <tr><td>6</td><td>R-CNN 的四步流程？它为什么慢？</td></tr>
+    <tr><td>7</td><td>Box Transform 的参数化方式？为什么用 exp 做缩放？</td></tr>
+    <tr><td>8</td><td>Fast R-CNN 相比 R-CNN 的核心改进是什么？"共享计算"具体指什么？</td></tr>
+    <tr><td>9</td><td>RoI Pool vs RoI Align 的区别？为什么 RoI Align 更好？双线性插值如何保证可微分？</td></tr>
+    <tr><td>10</td><td>Faster R-CNN 的 RPN 是怎么工作的？Anchor box 是什么？正负标签如何分配？</td></tr>
+    <tr><td>11</td><td>Faster R-CNN 的四个 loss 分别是什么？</td></tr>
+    <tr><td>12</td><td>FPN 解决了什么问题？top-down + lateral connection 如何工作？</td></tr>
+    <tr><td>13</td><td>Single-stage vs Two-stage 检测器的权衡？</td></tr>
+    <tr><td>14</td><td>RetinaNet 用什么方法解决类别不均衡问题？</td></tr>
+    <tr><td>15</td><td>FCOS 的 anchor-free 设计：centerness score 是什么？为什么需要它？</td></tr>
+  </table>
+
+  <div class="callout callout-tip" style="margin-top:24px">
+    <span class="callout-label">与作业和后续课程的连接</span>
+    <p><strong>A4</strong> 将要求你实现 single-stage detector（类似 FCOS）——你需要深刻理解 anchor-free 的 box regression 和 centerness 机制。<strong>A5</strong> 涉及 Mask R-CNN（在 Faster R-CNN 基础上加 segmentation head），那时你会用到本讲学的 RoI Align。<strong>Lecture 15</strong>（Segmentation）将直接延续本讲的框架，把输出从 bounding box 拓展到 pixel-level mask。</p>
+  </div>
+</div>
+
+</div>
+
+<script>
+function sw(tabId,paneId,idx){
+  document.getElementById(tabId).querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+  document.getElementById(paneId).querySelectorAll('.tab-pane').forEach((p,i)=>p.classList.toggle('active',i===idx));
+}
+</script>
+</body>
+</html>
