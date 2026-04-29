@@ -83,8 +83,27 @@ class DetectorBackboneWithFPN(nn.Module):
         # Add THREE lateral 1x1 conv and THREE output 3x3 conv layers.
         self.fpn_params = nn.ModuleDict()
 
-        # Replace "pass" statement with your code
-        pass
+        in_channels = {key : shape[1] for key, shape in dummy_out_shapes};
+    
+        self.fpn_params["lateral_c3"] = nn.Conv2d(
+            in_channels["c3"], out_channels, kernel_size=1, stride=1, padding=0
+        )
+        self.fpn_params["lateral_c4"] = nn.Conv2d(
+            in_channels["c4"], out_channels, kernel_size=1, stride=1, padding=0
+        )
+        self.fpn_params["lateral_c5"] = nn.Conv2d(
+            in_channels["c5"], out_channels, kernel_size=1, stride=1, padding=0
+        )
+
+        self.fpn_params["output_p3"] = nn.Conv2d(
+            out_channels, out_channels, kernel_size=3, stride=1, padding=1
+        )
+        self.fpn_params["output_p4"] = nn.Conv2d(
+            out_channels, out_channels, kernel_size=3, stride=1, padding=1
+        )
+        self.fpn_params["output_p5"] = nn.Conv2d(
+            out_channels, out_channels, kernel_size=3, stride=1, padding=1
+        )
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
@@ -109,9 +128,21 @@ class DetectorBackboneWithFPN(nn.Module):
         # (c3, c4, c5) and FPN conv layers created above.                    #
         # HINT: Use `F.interpolate` to upsample FPN features.                #
         ######################################################################
+        lat_c3 = self.fpn_params["lateral_c3"](backbone_feats["c3"])
+        lat_c4 = self.fpn_params["lateral_c4"](backbone_feats["c4"])
+        lat_c5 = self.fpn_params["lateral_c5"](backbone_feats["c5"])
 
-        # Replace "pass" statement with your code
-        pass
+        p5 = lat_c5
+        p4 = lat_c4 + F.interpolate(
+            p5, size=lat_c4.shape[2:], mode="nearest"
+        )
+        p3 = lat_c3 + F.interpolate(
+            p4, size=lat_c3.shape[2:], mode="nearest"
+        )
+
+        fpn_feats["p3"] = self.fpn_params["output_p3"](p3)
+        fpn_feats["p4"] = self.fpn_params["output_p4"](p4)
+        fpn_feats["p5"] = self.fpn_params["output_p5"](p5)
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################

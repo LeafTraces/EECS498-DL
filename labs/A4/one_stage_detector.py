@@ -59,9 +59,22 @@ class FCOSPredictionNetwork(nn.Module):
         # Fill these.
         stem_cls = []
         stem_box = []
-        # Replace "pass" statement with your code
-        pass
+        
+        prev_channels = in_channels
+        for out_channels in stem_channels:
+            conv_cls = nn.Conv2d(prev_channels, out_channels, kernel_size=3, stride=1, padding=1)
+            torch.nn.init.normal_(conv_cls.weight, mean=0, std=0.01)
+            torch.nn.init.constant_(conv_cls.bias, 0)
+            stem_cls.append(conv_cls)
+            stem_cls.append(nn.ReLU())
 
+            conv_box = nn.Conv2d(prev_channels, out_channels, kernel_size=3, stride=1, padding=1)
+            torch.nn.init.normal_(conv_cls.weight, mean=0, std=0.01)
+            torch.nn.init.constant_(conv_cls.bias, 0)
+            stem_box.append(conv_box)
+            stem_box.append(nn.ReLU())
+
+            prev_channels = out_channels
         # Wrap the layers defined by student into a `nn.Sequential` module:
         self.stem_cls = nn.Sequential(*stem_cls)
         self.stem_box = nn.Sequential(*stem_box)
@@ -83,12 +96,13 @@ class FCOSPredictionNetwork(nn.Module):
         ######################################################################
 
         # Replace these lines with your code, keep variable names unchanged.
-        self.pred_cls = None  # Class prediction conv
-        self.pred_box = None  # Box regression conv
-        self.pred_ctr = None  # Centerness conv
+        self.pred_cls = nn.Conv2d(prev_channels, num_classes, kernel_size=3, stride=1, padding=1)   # Class prediction conv
+        self.pred_box = nn.Conv2d(prev_channels, 4, kernel_size=3, stride=1, padding=1) # Box regression conv
+        self.pred_ctr = nn.Conv2d(prev_channels, 1, kernel_size=3, stride=1, padding=1) # Centerness conv
 
-        # Replace "pass" statement with your code
-        pass
+        for layer in [self.pred_cls, self.pred_box, self.pred_ctr]:
+            torch.nn.init.normal_(layer.weight, mean=0, std=0.01)
+            torch.nn.init.constant_(layer.bias, 0)
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
@@ -134,8 +148,30 @@ class FCOSPredictionNetwork(nn.Module):
         boxreg_deltas = {}
         centerness_logits = {}
 
-        # Replace "pass" statement with your code
-        pass
+        def flatten_prediction(origin_out : torch.Tensor):
+            B, C, H, W = origin_out.shape
+            out = origin_out.permute(0, 2, 3, 1)
+            out = out.reshape(B, H * W, C)
+            return out
+
+        for level, feats in feats_per_fpn_level.items():
+            # feats: (B, C, H, W)
+            cls_feat = self.stem_cls(feats)
+            cls_out = self.pred_cls(cls_feat)
+
+            box_feat = self.stem_box(feats)
+            box_out = self.pred_box(box_feat)
+            ctr_out = self.pred_ctr(box_feat)
+
+            # 3. reshape: (B, C, H, W) -> (B, H*W, C)
+            cls_out = flatten_prediction(cls_out)
+            box_out = flatten_prediction(box_out)
+            ctr_out = flatten_prediction(ctr_out)
+
+            # 4. 存入对应 level
+            class_logits[level] = cls_out
+            boxreg_deltas[level] = box_out
+            centerness_logits[level] = ctr_out
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
