@@ -83,6 +83,7 @@ class DetectorBackboneWithFPN(nn.Module):
         # Add THREE lateral 1x1 conv and THREE output 3x3 conv layers.
         self.fpn_params = nn.ModuleDict()
 
+        # Replace "pass" statement with your code
         in_channels = {key : shape[1] for key, shape in dummy_out_shapes};
     
         self.fpn_params["lateral_c3"] = nn.Conv2d(
@@ -128,6 +129,8 @@ class DetectorBackboneWithFPN(nn.Module):
         # (c3, c4, c5) and FPN conv layers created above.                    #
         # HINT: Use `F.interpolate` to upsample FPN features.                #
         ######################################################################
+
+        # Replace "pass" statement with your code
         lat_c3 = self.fpn_params["lateral_c3"](backbone_feats["c3"])
         lat_c4 = self.fpn_params["lateral_c4"](backbone_feats["c4"])
         lat_c5 = self.fpn_params["lateral_c5"](backbone_feats["c5"])
@@ -180,15 +183,21 @@ def get_fpn_location_coords(
     location_coords = {
         level_name: None for level_name, _ in shape_per_fpn_level.items()
     }
-
-    for level_name, feat_shape in shape_per_fpn_level.items():
-        level_stride = strides_per_fpn_level[level_name]
-
         ######################################################################
         # TODO: Implement logic to get location co-ordinates below.          #
         ######################################################################
         # Replace "pass" statement with your code
-        pass
+    for level_name, feat_shape in shape_per_fpn_level.items():
+        level_stride = strides_per_fpn_level[level_name]
+        feat_H, feat_W = feat_shape[2], feat_shape[3]
+
+        # 映射到原图坐标
+        xs = torch.arange(feat_W, device=device, dtype=dtype) * level_stride + level_stride / 2
+        ys = torch.arange(feat_H, device=device, dtype=dtype) * level_stride + level_stride / 2
+
+        ys_grid, xs_grid = torch.meshgrid(ys, xs, indexing="ij")
+
+        location_coords[level_name] = torch.stack([xs_grid, ys_grid], dim=-1).reshape(-1, 2)
         ######################################################################
         #                             END OF YOUR CODE                       #
         ######################################################################
@@ -214,7 +223,6 @@ def nms(boxes: torch.Tensor, scores: torch.Tensor, iou_threshold: float = 0.5):
     if (not boxes.numel()) or (not scores.numel()):
         return torch.zeros(0, dtype=torch.long)
 
-    keep = None
     #############################################################################
     # TODO: Implement non-maximum suppression which iterates the following:     #
     #       1. Select the highest-scoring box among the remaining ones,         #
@@ -226,8 +234,42 @@ def nms(boxes: torch.Tensor, scores: torch.Tensor, iou_threshold: float = 0.5):
     # HINT: You can refer to the torchvision library code:                      #
     # github.com/pytorch/vision/blob/main/torchvision/csrc/ops/cpu/nms_kernel.cpp
     #############################################################################
-    # Replace "pass" statement with your code
-    pass
+    if (not boxes.numel()) or (not scores.numel()):
+        return torch.zeros(0, dtype=torch.long, device=boxes.device)
+    
+    x1 = boxes[:, 0]
+    y1 = boxes[:, 1]
+    x2 = boxes[:, 2]
+    y2 = boxes[:, 3]
+
+    areas = (x2 - x1).clamp(min=0) * (y2 - y1).clamp(min=0)
+    order = scores.argsort(descending=True)
+
+    keep = []
+    while order.numel() > 0:
+        current = order[0]
+        keep.append(current)
+
+        if order.numel() == 1:
+            break
+
+        rest = order[1:]
+
+        inter_x1 = torch.maximum(x1[current], x1[rest])
+        inter_y1 = torch.maximum(y1[current], y1[rest])
+        inter_x2 = torch.minimum(x2[current], x2[rest])
+        inter_y2 = torch.minimum(y2[current], y2[rest])
+
+        inter_w = (inter_x2 - inter_x1).clamp(min=0)
+        inter_h = (inter_y2 - inter_y1).clamp(min=0)
+        inter_area = inter_w * inter_h
+
+        union_area = areas[current] + areas[rest] - inter_area
+        iou = inter_area / union_area.clamp(min=1e-6)
+
+        order = rest[iou <= iou_threshold]
+
+    keep = torch.stack(keep).to(dtype=torch.long)
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
