@@ -60,8 +60,17 @@ class RPNPredictionNetwork(nn.Module):
         # Fill this list. It is okay to use your implementation from
         # `FCOSPredictionNetwork` for this code block.
         stem_rpn = []
-        # Replace "pass" statement with your code
-        pass
+        
+        prev_channels = in_channels
+        for out_channels in stem_channels:
+            conv_rpn = nn.Conv2d(prev_channels, out_channels, kernel_size=3, stride=1, padding=1)
+            torch.nn.init.normal_(conv_rpn.weight, mean=0, std=0.01)
+            torch.nn.init.constant_(conv_rpn.bias, 0)
+            stem_rpn.append(conv_rpn)
+            stem_rpn.append(nn.ReLU())
+
+            prev_channels = out_channels
+
 
         # Wrap the layers defined by student into a `nn.Sequential` module:
         self.stem_rpn = nn.Sequential(*stem_rpn)
@@ -74,12 +83,16 @@ class RPNPredictionNetwork(nn.Module):
         # numerically stable implementations with logits.
         ######################################################################
 
-        # Replace these lines with your code, keep variable names unchanged.
-        self.pred_obj = None  # Objectness conv
-        self.pred_box = None  # Box regression conv
+        # Objectness conv
+        self.pred_obj = nn.Conv2d(prev_channels, self.num_anchors, kernel_size=1, stride=1, padding=0)
+        torch.nn.init.normal_(self.pred_obj.weight, mean=0, std=0.01)
+        torch.nn.init.constant_(self.pred_obj.bias, 0)
 
-        # Replace "pass" statement with your code
-        pass
+        # Box regression conv
+        self.pred_box = nn.Conv2d(prev_channels, self.num_anchors, kernel_size=1, stride=1, padding=0)
+        torch.nn.init.normal_(self.pred_box.weight, mean=0, std=0.01)
+        torch.nn.init.constant_(self.pred_box.bias, 0)
+
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
@@ -88,7 +101,7 @@ class RPNPredictionNetwork(nn.Module):
         """
         Accept FPN feature maps and predict desired quantities for every anchor
         at every location. Format the output tensors such that feature height,
-        width, and number of anchors are collapsed into a single dimension (see
+        width, ppppp into a single dimension (see
         description below in "Returns" section) this is convenient for computing
         loss and perforning inference.
 
@@ -110,8 +123,26 @@ class RPNPredictionNetwork(nn.Module):
         object_logits = {}
         boxreg_deltas = {}
 
-        # Replace "pass" statement with your code
-        pass
+        def flatten_prediction(origin_out : torch.Tensor):
+            B, C, H, W = origin_out.shape
+            out = origin_out.permute(0, 2, 3, 1)
+            out = out.reshape(B, H * W, C)
+            return out
+
+        for level, feats in feats_per_fpn_level.items():
+            # feats: (B, C, H, W)
+            rpn_feat = self.stem_rpn(feats)
+
+            obj_out = self.pred_obj(rpn_feat)
+            box_out = self.pred_box(rpn_feat)
+
+            # 3. reshape: (B, C, H, W) -> (B, H*W, C)
+            obj_out = flatten_prediction(obj_out)
+            box_out = flatten_prediction(box_out)
+
+            # 4. 存入对应 level
+            object_logits[level] = obj_out
+            boxreg_deltas[level] = box_out
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
