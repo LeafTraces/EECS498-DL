@@ -531,8 +531,6 @@ class FCOS(nn.Module):
         # HINT: You have already implemented everything, just have to
         # call the functions properly.
         ######################################################################
-        # Feel free to delete this line: (but keep variable names same)
-        locations_per_fpn_level = None
         # Replace "pass" statement with your code
         locations_per_fpn_level = get_fpn_location_coords(
             shape_per_fpn_level={k: v.shape for k, v in feats_per_fpn_level.items()},
