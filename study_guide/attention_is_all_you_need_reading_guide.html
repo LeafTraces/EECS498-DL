@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>论文精读：Attention Is All You Need</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf9f6;--text:#1a1a2e;--accent:#2563eb;--accent-light:#dbeafe;--green:#059669;--green-light:#d1fae5;--red:#dc2626;--red-light:#fee2e2;--orange:#d97706;--orange-light:#fef3c7;--purple:#7c3aed;--purple-light:#ede9fe;--border:#e5e7eb;--code-bg:#1e293b;--card-shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans SC','Source Serif 4',serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:16px}
+.container{max-width:860px;margin:0 auto;padding:40px 24px 100px}
+.header{text-align:center;padding:60px 0 40px;border-bottom:2px solid var(--text);margin-bottom:48px}
+.header .tag{display:inline-block;background:var(--text);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;margin-bottom:16px}
+.header h1{font-family:'Source Serif 4',serif;font-size:2.2em;font-weight:700;line-height:1.2;margin-bottom:12px}
+.header .subtitle{font-size:1.05em;color:#666;font-style:italic}
+.toc{background:white;border:1px solid var(--border);border-radius:8px;padding:24px 28px;margin-bottom:48px;box-shadow:var(--card-shadow)}
+.toc h2{font-size:.85em;text-transform:uppercase;letter-spacing:2px;color:#999;margin-bottom:12px;font-family:'JetBrains Mono',monospace}
+.toc ol{padding-left:20px;columns:2;column-gap:32px}
+.toc li{font-size:.92em;margin-bottom:4px;break-inside:avoid}
+.toc a{color:var(--accent);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.section{margin-bottom:56px}
+.section-num{font-family:'JetBrains Mono',monospace;font-size:.8em;color:var(--accent);letter-spacing:1px}
+h2.section-title{font-family:'Source Serif 4',serif;font-size:1.7em;font-weight:700;margin:4px 0 8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.slide-ref{font-family:'JetBrains Mono',monospace;font-size:.78em;color:#999;margin-bottom:16px;display:block}
+h3{font-size:1.15em;font-weight:700;margin:28px 0 10px;color:var(--text)}
+p{margin-bottom:14px}
+.callout{border-left:4px solid;padding:14px 18px;margin:18px 0;border-radius:0 6px 6px 0;font-size:.95em}
+.callout-key{border-color:var(--accent);background:var(--accent-light)}
+.callout-why{border-color:var(--green);background:var(--green-light)}
+.callout-warn{border-color:var(--red);background:var(--red-light)}
+.callout-tip{border-color:var(--orange);background:var(--orange-light)}
+.callout-insight{border-color:var(--purple);background:var(--purple-light)}
+.callout-label{font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
+.callout-key .callout-label{color:var(--accent)}
+.callout-why .callout-label{color:var(--green)}
+.callout-warn .callout-label{color:var(--red)}
+.callout-tip .callout-label{color:var(--orange)}
+.callout-insight .callout-label{color:var(--purple)}
+pre{background:var(--code-bg);color:#e2e8f0;padding:18px 20px;border-radius:8px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.84em;line-height:1.65;margin:16px 0}
+code{font-family:'JetBrains Mono',monospace;background:#f1f5f9;padding:2px 6px;border-radius:3px;font-size:.88em}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.92em}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:#f8fafc;font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:.5px}
+.diagram{background:white;border:1px solid var(--border);border-radius:8px;padding:24px;margin:20px 0;text-align:center;box-shadow:var(--card-shadow)}
+.diagram-caption{font-size:.85em;color:#666;margin-top:10px;font-style:italic}
+.versus{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.versus>div{background:white;border:1px solid var(--border);border-radius:8px;padding:16px;box-shadow:var(--card-shadow)}
+.versus h4{font-size:.95em;font-weight:700;margin-bottom:8px;text-align:center}
+.highlight{background:linear-gradient(transparent 60%,#fef08a 60%);padding:0 2px}
+strong{font-weight:700}em{font-style:italic}
+.flow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.82em}
+.flow-box{padding:7px 12px;border-radius:6px;border:2px solid;font-weight:500}
+.flow-arrow{color:#999;font-size:1.2em}
+.fb-input{background:#fef2f2;border-color:#fca5a5}.fb-conv{background:#dbeafe;border-color:#93c5fd}.fb-act{background:#d1fae5;border-color:#6ee7b7}.fb-pool{background:#fef3c7;border-color:#fcd34d}.fb-norm{background:#ede9fe;border-color:#c4b5fd}.fb-fc{background:#f3f4f6;border-color:#9ca3af}
+.math-block{text-align:center;padding:16px 0;font-size:1.1em;font-family:'Source Serif 4',serif;font-style:italic;background:white;border:1px solid var(--border);border-radius:6px;margin:16px 0;box-shadow:var(--card-shadow)}
+ul{margin:8px 0 14px 20px}ul li{margin-bottom:4px}
+ol{margin:8px 0 14px 20px}ol li{margin-bottom:6px}
+.step-card{background:white;border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin:10px 0;box-shadow:var(--card-shadow);display:flex;gap:14px;align-items:flex-start}
+.step-num{font-family:'JetBrains Mono',monospace;font-size:1.2em;font-weight:500;color:var(--accent);min-width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--accent-light);border-radius:50%}
+.step-content{flex:1}
+.step-content strong{display:block;margin-bottom:4px}
+.formula-card{background:linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%);border:1px solid var(--border);border-radius:8px;padding:18px 24px;margin:16px 0}
+.formula-card .formula-title{font-size:.82em;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;font-weight:500}
+.formula-card .formula{font-size:1.15em;text-align:center;padding:8px 0;color:var(--text);font-family:'Source Serif 4',serif;font-style:italic}
+.formula-card .formula-note{font-size:.85em;color:#64748b;margin-top:10px;font-style:italic;text-align:center}
+.dim-table{font-family:'JetBrains Mono',monospace;font-size:.88em}
+.dim-table td:first-child{font-weight:700;color:var(--accent)}
+@media(max-width:640px){.versus{grid-template-columns:1fr}.header h1{font-size:1.6em}.toc ol{columns:1}.container{padding:24px 16px 80px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <div class="tag">论文精读 · Paper Reading</div>
+  <h1>Attention Is All You Need</h1>
+  <div class="subtitle">Vaswani et al. · NIPS 2017 · Google Brain & Google Research<br>现代 AI 的基石 &mdash; GPT、BERT、ViT、Stable Diffusion 的共同祖先</div>
+</div>
+
+<nav class="toc">
+  <h2>目录 Contents</h2>
+  <ol>
+    <li><a href="#s1">论文背景：为什么要替换 RNN</a></li>
+    <li><a href="#s2">整体架构：Encoder-Decoder</a></li>
+    <li><a href="#s3">核心机制：Scaled Dot-Product Attention</a></li>
+    <li><a href="#s4">多头注意力：Multi-Head Attention</a></li>
+    <li><a href="#s5">三种 Attention 的使用方式</a></li>
+    <li><a href="#s6">位置编码：Positional Encoding</a></li>
+    <li><a href="#s7">前馈网络与残差连接</a></li>
+    <li><a href="#s8">为什么选 Self-Attention</a></li>
+    <li><a href="#s9">训练细节与实验结果</a></li>
+    <li><a href="#s10">从论文到 A5：实现指南</a></li>
+  </ol>
+</nav>
+
+<!-- ====== SECTION 1 ====== -->
+<div class="section" id="s1">
+  <span class="section-num">PART 01</span>
+  <h2 class="section-title">论文背景：为什么要替换 RNN</h2>
+  <span class="slide-ref">对应论文 Section 1 &amp; 2</span>
+
+  <p>在 2017 年之前，序列建模（机器翻译、语言模型等）的主流方法是 <strong>RNN</strong>（循环神经网络）及其变体 LSTM、GRU。它们逐步处理序列：先看第 1 个词，再看第 2 个词，依此类推。</p>
+
+  <div class="callout callout-warn">
+    <span class="callout-label">RNN 的两大致命缺陷</span>
+    <p><strong>缺陷一：无法并行。</strong> 计算第 t 步必须等第 t-1 步完成（因为 h<sub>t</sub> 依赖 h<sub>t-1</sub>）。序列越长，训练越慢。GPU 擅长的并行计算完全用不上。</p>
+    <p><strong>缺陷二：长距离依赖困难。</strong> 如果序列有 100 个词，第 1 个词的信息要经过 99 步传递才能到达第 100 个词，中间必然会衰减或丢失（即"梯度消失"问题）。LSTM 和 GRU 缓解了这个问题，但没有根治。</p>
+  </div>
+
+  <p>这篇论文的核心主张是：<strong>完全去掉 RNN 的循环结构，只用 Attention 机制来建模序列</strong>。论文标题"Attention Is All You Need"就是在说：你不需要循环，不需要卷积——只需要 Attention。</p>
+
+  <div class="callout callout-key">
+    <span class="callout-label">论文的一句话总结</span>
+    提出 <strong>Transformer</strong> 架构——一个完全基于 Attention 的 Encoder-Decoder 模型，在机器翻译任务上大幅超越 RNN，同时训练速度快数倍。
+  </div>
+</div>
+
+<!-- ====== SECTION 2 ====== -->
+<div class="section" id="s2">
+  <span class="section-num">PART 02</span>
+  <h2 class="section-title">整体架构：Encoder-Decoder</h2>
+  <span class="slide-ref">对应论文 Section 3.1 &amp; Figure 1</span>
+
+  <p>Transformer 沿用了经典的 <strong>Encoder-Decoder</strong> 框架：Encoder 把输入序列编码为一组连续表示，Decoder 基于这些表示逐步生成输出序列。</p>
+
+  <div class="diagram">
+    <div class="flow" style="flex-direction:column;gap:10px">
+      <span style="font-size:.9em;color:#666">输入："I love cats"</span>
+      <span class="flow-arrow">&darr;</span>
+      <span class="flow-box fb-conv" style="width:80%"><strong>Encoder</strong>（6 层堆叠）<br>每层 = Self-Attention + Feed-Forward + 残差 + LayerNorm</span>
+      <span class="flow-arrow">&darr; 编码后的表示 z = (z<sub>1</sub>, z<sub>2</sub>, z<sub>3</sub>)</span>
+      <span class="flow-box fb-act" style="width:80%"><strong>Decoder</strong>（6 层堆叠）<br>每层 = Masked Self-Attention + Cross-Attention + Feed-Forward + 残差 + LayerNorm</span>
+      <span class="flow-arrow">&darr;</span>
+      <span style="font-size:.9em;color:#666">输出："我 爱 猫"（逐词生成）</span>
+    </div>
+  </div>
+
+  <h3>Encoder 每一层的结构</h3>
+
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Multi-Head Self-Attention</strong>
+      每个位置都关注序列中的所有其他位置。"I" 可以直接看到 "cats"，不需要逐步传递。
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>Position-wise Feed-Forward Network</strong>
+      对每个位置独立地做一个两层 MLP（和你在 A2 写的两层网络结构一样）。
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">+</div>
+    <div class="step-content">
+      <strong>每一步之后都有 残差连接 + LayerNorm</strong>
+      <code>output = LayerNorm(x + Sublayer(x))</code>，其中 x 是该子层的输入。残差连接缓解深度网络的梯度消失。
+    </div>
+  </div>
+
+  <h3>Decoder 每一层和 Encoder 的区别</h3>
+
+  <p>Decoder 多了一个子层——<strong>Cross-Attention</strong>（也叫 Encoder-Decoder Attention）：Query 来自 Decoder 自身，Key 和 Value 来自 Encoder 的输出。这就是 Decoder "读取"输入序列信息的通道。</p>
+
+  <p>另外，Decoder 的 Self-Attention 带有 <strong>Mask</strong>——确保位置 i 只能看到 i 之前的位置（不能偷看未来的输出），这是保持自回归性质（一个一个生成）所必需的。</p>
+
+  <div class="callout callout-tip">
+    <span class="callout-label">关键维度</span>
+    论文中所有子层的输入和输出都是 d<sub>model</sub> = 512 维。堆叠 N = 6 层。你在 A5 中实现的可能是一个更小的版本。
+  </div>
+</div>
+
+<!-- ====== SECTION 3 ====== -->
+<div class="section" id="s3">
+  <span class="section-num">PART 03</span>
+  <h2 class="section-title">核心机制：Scaled Dot-Product Attention</h2>
+  <span class="slide-ref">对应论文 Section 3.2.1 &amp; Equation (1)</span>
+
+  <p>这是<span class="highlight">整篇论文最核心的公式</span>。理解了这个公式，就理解了 Transformer 的心脏。</p>
+
+  <div class="formula-card">
+    <div class="formula-title">Equation (1): Scaled Dot-Product Attention</div>
+    <div class="formula">Attention(Q, K, V) = softmax(QK<sup>T</sup> / &radic;d<sub>k</sub>) &middot; V</div>
+  </div>
+
+  <h3>Q、K、V 是什么：图书馆类比</h3>
+
+  <p>想象你在图书馆找书：</p>
+
+  <div class="step-card">
+    <div class="step-num">Q</div>
+    <div class="step-content">
+      <strong>Query（查询）= 你的问题</strong>
+      "我想找关于深度学习的书"——你带着一个明确的需求。
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">K</div>
+    <div class="step-content">
+      <strong>Key（键）= 每本书的标签</strong>
+      书架上每本书都有一个标签，描述它的内容。你把你的 Query 和每个 Key 做比较，看哪些匹配。
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">V</div>
+    <div class="step-content">
+      <strong>Value（值）= 书的实际内容</strong>
+      你根据匹配程度（attention weight），加权混合各本书的内容，得到你要的答案。
+    </div>
+  </div>
+
+  <h3>公式逐步拆解</h3>
+
+  <p>设序列长度为 n，维度为 d<sub>k</sub>。Q、K、V 都是矩阵。</p>
+
+  <div class="step-card">
+    <div class="step-num">①</div>
+    <div class="step-content">
+      <strong>计算相似度：QK<sup>T</sup></strong>
+      形状 (n, d<sub>k</sub>) × (d<sub>k</sub>, n) = <strong>(n, n)</strong>。结果矩阵的 [i, j] 位置表示位置 i 的 Query 和位置 j 的 Key 有多"匹配"。这就是 A1 中你算 KNN 距离矩阵的同款操作——一次矩阵乘法算出所有位置对之间的相似度。
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">②</div>
+    <div class="step-content">
+      <strong>缩放：除以 &radic;d<sub>k</sub></strong>
+      论文 Section 3.2.1 解释了原因：如果 d<sub>k</sub> 很大（比如 64），QK<sup>T</sup> 的值会很大（方差 &asymp; d<sub>k</sub>），推动 softmax 进入饱和区（梯度接近零）。除以 &radic;d<sub>k</sub> 把方差拉回 1，让 softmax 有正常的梯度。<br><br>
+      <strong>这和你在 A2 Softmax loss 里做的"减去最大值"是类似的思想——都是数值稳定性处理。</strong>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">③</div>
+    <div class="step-content">
+      <strong>归一化：softmax 逐行</strong>
+      对 (n, n) 矩阵的每一行做 softmax，使每行的权重和为 1。现在 [i, j] 表示"位置 i 应该给位置 j 分配多少注意力"。
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">④</div>
+    <div class="step-content">
+      <strong>加权求和：× V</strong>
+      形状 (n, n) × (n, d<sub>v</sub>) = <strong>(n, d<sub>v</sub>)</strong>。每个位置的输出是所有位置 Value 的加权和，权重就是 attention 分数。
+    </div>
+  </div>
+
+  <div class="callout callout-key">
+    <span class="callout-label">维度总结</span>
+    <table class="dim-table" style="font-size:.88em">
+      <tr><td>Q</td><td>(n, d<sub>k</sub>)</td><td>n 个查询，每个 d<sub>k</sub> 维</td></tr>
+      <tr><td>K</td><td>(n, d<sub>k</sub>)</td><td>n 个键，和 Q 同维度</td></tr>
+      <tr><td>V</td><td>(n, d<sub>v</sub>)</td><td>n 个值，每个 d<sub>v</sub> 维</td></tr>
+      <tr><td>QK<sup>T</sup></td><td>(n, n)</td><td>注意力分数矩阵（相似度）</td></tr>
+      <tr><td>softmax(·)</td><td>(n, n)</td><td>注意力权重矩阵（每行和为 1）</td></tr>
+      <tr><td>output</td><td>(n, d<sub>v</sub>)</td><td>加权后的表示</td></tr>
+    </table>
+  </div>
+
+  <div class="callout callout-why">
+    <span class="callout-label">为什么 Self-Attention 解决了 RNN 的问题</span>
+    <p><strong>并行性</strong>：QK<sup>T</sup> 是一次矩阵乘法，所有位置对同时计算——不需要"先算第 1 步再算第 2 步"。</p>
+    <p><strong>长距离依赖</strong>：任何两个位置之间的路径长度是 O(1)——第 1 个词直接 attend 到第 100 个词，不需要信息逐步传递 99 步。</p>
+  </div>
+</div>
+
+<!-- ====== SECTION 4 ====== -->
+<div class="section" id="s4">
+  <span class="section-num">PART 04</span>
+  <h2 class="section-title">多头注意力：Multi-Head Attention</h2>
+  <span class="slide-ref">对应论文 Section 3.2.2</span>
+
+  <p>单头 Attention 只有一组 Q、K、V——只能学到一种"关注模式"。但语言是多层次的：有的词需要关注语法关系，有的需要关注语义相似性，有的需要关注位置邻近性。</p>
+
+  <p><strong>Multi-Head Attention 的解决方案</strong>：把 d<sub>model</sub> 维的 Q、K、V 分成 h 个"头"，每个头独立做 Attention，最后拼接回来。</p>
+
+  <div class="formula-card">
+    <div class="formula-title">Multi-Head Attention</div>
+    <div class="formula">
+      MultiHead(Q, K, V) = Concat(head<sub>1</sub>, ..., head<sub>h</sub>) W<sup>O</sup><br>
+      <span style="font-size:.85em">where head<sub>i</sub> = Attention(QW<sub>i</sub><sup>Q</sup>, KW<sub>i</sub><sup>K</sup>, VW<sub>i</sub><sup>V</sup>)</span>
+    </div>
+    <div class="formula-note">先用线性投影把 Q、K、V 映射到低维空间，分头做 Attention，再拼接投影回 d<sub>model</sub></div>
+  </div>
+
+  <h3>维度流转</h3>
+
+  <p>论文使用 h = 8 头，d<sub>model</sub> = 512：</p>
+
+  <table class="dim-table">
+    <tr><th>变量</th><th>形状</th><th>说明</th></tr>
+    <tr><td>输入 Q, K, V</td><td>(n, 512)</td><td>原始 d<sub>model</sub> 维</td></tr>
+    <tr><td>W<sub>i</sub><sup>Q</sup>, W<sub>i</sub><sup>K</sup></td><td>(512, 64)</td><td>投影到 d<sub>k</sub> = 512/8 = 64</td></tr>
+    <tr><td>W<sub>i</sub><sup>V</sup></td><td>(512, 64)</td><td>投影到 d<sub>v</sub> = 64</td></tr>
+    <tr><td>每个 head<sub>i</sub></td><td>(n, 64)</td><td>单头 Attention 输出</td></tr>
+    <tr><td>Concat</td><td>(n, 512)</td><td>8 个头拼接：8 × 64 = 512</td></tr>
+    <tr><td>W<sup>O</sup></td><td>(512, 512)</td><td>最终线性投影</td></tr>
+    <tr><td>输出</td><td>(n, 512)</td><td>和输入维度相同！</td></tr>
+  </table>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">为什么分头不增加计算量</span>
+    单头做 d<sub>model</sub> 维的 Attention，计算量 &asymp; n² &middot; d<sub>model</sub>。8 头各做 64 维的 Attention，计算量 &asymp; 8 &middot; n² &middot; 64 = n² &middot; 512。<strong>总量相同</strong>——只是把一个"大 Attention"拆成了 8 个"小 Attention"并行跑。
+  </div>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">论文附录的可视化（Figures 3-5）</span>
+    论文末尾的可视化显示，不同的 head 确实学到了不同的"关注模式"。Figure 3 显示某个 head 学会了跟踪长距离动宾关系（"making...more difficult"）；Figure 4 显示两个 head 学会了代词消解（"its" → "Law"）。<strong>这就是 Multi-Head 的价值——让模型同时从多个角度理解序列。</strong>
+  </div>
+</div>
+
+<!-- ====== SECTION 5 ====== -->
+<div class="section" id="s5">
+  <span class="section-num">PART 05</span>
+  <h2 class="section-title">三种 Attention 的使用方式</h2>
+  <span class="slide-ref">对应论文 Section 3.2.3</span>
+
+  <p>Transformer 中 Attention 被用在三个不同的地方，Q、K、V 的来源各不相同：</p>
+
+  <table>
+    <tr><th>位置</th><th>Q 来自</th><th>K, V 来自</th><th>作用</th></tr>
+    <tr>
+      <td><strong>Encoder Self-Attention</strong></td>
+      <td>Encoder 上一层</td>
+      <td>Encoder 上一层（同源）</td>
+      <td>输入序列的每个词关注输入序列的所有词</td>
+    </tr>
+    <tr>
+      <td><strong>Decoder Masked Self-Attention</strong></td>
+      <td>Decoder 上一层</td>
+      <td>Decoder 上一层（同源）</td>
+      <td>输出序列的每个词关注它<strong>之前</strong>的所有词（不能看未来）</td>
+    </tr>
+    <tr>
+      <td><strong>Encoder-Decoder Cross-Attention</strong></td>
+      <td>Decoder 上一层</td>
+      <td><strong>Encoder 的输出</strong></td>
+      <td>输出序列的每个词关注输入序列的所有词</td>
+    </tr>
+  </table>
+
+  <div class="callout callout-why">
+    <span class="callout-label">为什么 Decoder Self-Attention 需要 Mask</span>
+    训练时整个目标序列是同时喂给 Decoder 的（为了并行）。但生成时是从左到右逐词生成的——生成第 3 个词时，第 4、5、6 个词还不存在。Mask 确保训练和推理的行为一致：把 QK<sup>T</sup> 矩阵的上三角（未来位置）设为 &minus;&infin;，softmax 后变成 0。
+  </div>
+</div>
+
+<!-- ====== SECTION 6 ====== -->
+<div class="section" id="s6">
+  <span class="section-num">PART 06</span>
+  <h2 class="section-title">位置编码：Positional Encoding</h2>
+  <span class="slide-ref">对应论文 Section 3.5</span>
+
+  <p>Self-Attention 的计算是<strong>位置无关的</strong>——把输入序列打乱顺序，QK<sup>T</sup> 的结果会完全不同，但模型本身没有"知道"顺序的能力。"I love cats" 和 "cats love I" 的 Attention 权重完全一样（如果不加位置信息）。</p>
+
+  <p>解决方案：给每个位置<strong>加上</strong>一个位置编码向量，这样模型就能区分"第 1 个词"和"第 5 个词"。</p>
+
+  <div class="formula-card">
+    <div class="formula-title">正弦位置编码（Equation in Section 3.5）</div>
+    <div class="formula">
+      PE(pos, 2i) = sin(pos / 10000<sup>2i/d<sub>model</sub></sup>)<br>
+      PE(pos, 2i+1) = cos(pos / 10000<sup>2i/d<sub>model</sub></sup>)
+    </div>
+    <div class="formula-note">pos = 位置，i = 维度索引。偶数维用 sin，奇数维用 cos</div>
+  </div>
+
+  <h3>为什么用 sin/cos</h3>
+
+  <p>论文给出的理由：对于任何固定的偏移量 k，PE<sub>pos+k</sub> 可以表示为 PE<sub>pos</sub> 的线性函数。这意味着模型可以轻松学会关注"相对位置"——比如"前一个词"或"后两个词"——而不仅仅是"绝对位置"。</p>
+
+  <div class="callout callout-tip">
+    <span class="callout-label">直觉理解</span>
+    不同频率的 sin/cos 就像不同精度的时钟：秒针（高频）区分相邻位置，分针（中频）区分远一些的位置，时针（低频）区分段落级别的位置。所有频率组合在一起，每个位置都能获得一个唯一的"签名"。
+  </div>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">论文中的另一个发现（Table 3, Row E）</span>
+    论文对比了正弦编码和可学习的位置嵌入（learned positional embeddings），发现<strong>两者效果几乎完全一样</strong>。选择正弦版本是因为它可能能泛化到训练时没见过的更长序列。在现代实践中，ViT 用的是可学习的位置嵌入，GPT 系列也是。
+  </div>
+</div>
+
+<!-- ====== SECTION 7 ====== -->
+<div class="section" id="s7">
+  <span class="section-num">PART 07</span>
+  <h2 class="section-title">前馈网络与残差连接</h2>
+  <span class="slide-ref">对应论文 Section 3.3 &amp; Equation (2)</span>
+
+  <p>每层的第二个子层是一个 <strong>Position-wise Feed-Forward Network</strong>（简称 FFN）。"Position-wise"意味着对每个位置独立地应用同一个两层 MLP。</p>
+
+  <div class="formula-card">
+    <div class="formula-title">Equation (2): Feed-Forward Network</div>
+    <div class="formula">FFN(x) = max(0, xW<sub>1</sub> + b<sub>1</sub>) W<sub>2</sub> + b<sub>2</sub></div>
+    <div class="formula-note">这就是你在 A2 写过的两层神经网络！W<sub>1</sub> 把 512 维映射到 2048 维，ReLU，再映射回 512 维</div>
+  </div>
+
+  <div class="callout callout-key">
+    <span class="callout-label">FFN 的作用</span>
+    Self-Attention 负责"让不同位置的信息交流"，FFN 负责"在每个位置内部做非线性变换"。可以理解为：Attention 是<strong>"通信"</strong>，FFN 是<strong>"计算"</strong>。如果去掉 FFN，Transformer 就只能做加权平均（线性变换），表达能力大幅下降。
+  </div>
+
+  <h3>残差连接的重要性</h3>
+
+  <p>每个子层的输出是 <code>LayerNorm(x + Sublayer(x))</code>，其中 <code>x + Sublayer(x)</code> 就是残差连接。在一个 6 层 Transformer 中，从输入到输出有 12 个子层——没有残差连接，梯度几乎不可能正常传回这么深。</p>
+
+  <p>这和 Lecture 8 中 ResNet 的残差连接完全一样——让梯度有一条"高速公路"直接回传，不经过复杂的非线性变换。</p>
+</div>
+
+<!-- ====== SECTION 8 ====== -->
+<div class="section" id="s8">
+  <span class="section-num">PART 08</span>
+  <h2 class="section-title">为什么选 Self-Attention</h2>
+  <span class="slide-ref">对应论文 Section 4 &amp; Table 1</span>
+
+  <p>论文 Table 1 从三个维度对比了 Self-Attention、RNN 和 CNN：</p>
+
+  <table>
+    <tr><th>指标</th><th>Self-Attention</th><th>RNN</th><th>CNN</th></tr>
+    <tr>
+      <td><strong>每层计算量</strong></td>
+      <td>O(n² &middot; d)</td>
+      <td>O(n &middot; d²)</td>
+      <td>O(k &middot; n &middot; d²)</td>
+    </tr>
+    <tr>
+      <td><strong>最少顺序操作</strong></td>
+      <td style="color:var(--green);font-weight:bold">O(1) ✓</td>
+      <td style="color:var(--red)">O(n)</td>
+      <td style="color:var(--green)">O(1)</td>
+    </tr>
+    <tr>
+      <td><strong>最大路径长度</strong></td>
+      <td style="color:var(--green);font-weight:bold">O(1) ✓</td>
+      <td style="color:var(--red)">O(n)</td>
+      <td>O(log<sub>k</sub>(n))</td>
+    </tr>
+  </table>
+
+  <div class="versus">
+    <div>
+      <h4 style="color:var(--green)">Self-Attention 的优势</h4>
+      <p><strong>全并行</strong>：所有位置同时计算<br><strong>O(1) 路径</strong>：任意两个位置直接连接<br><strong>可解释性</strong>：Attention 权重可视化</p>
+    </div>
+    <div>
+      <h4 style="color:var(--red)">Self-Attention 的劣势</h4>
+      <p><strong>n² 的内存</strong>：序列长度 n 很大时，(n, n) 的注意力矩阵会爆内存。n=10000 时需要 10000² &asymp; 4GB 的矩阵。<br><br>这也是后来 Efficient Transformers（如 Flash Attention）的研究动力。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SECTION 9 ====== -->
+<div class="section" id="s9">
+  <span class="section-num">PART 09</span>
+  <h2 class="section-title">训练细节与实验结果</h2>
+  <span class="slide-ref">对应论文 Section 5 &amp; 6</span>
+
+  <h3>优化器选择（Section 5.3）</h3>
+
+  <p>Transformer 用了 <strong>Adam</strong>（&beta;<sub>1</sub>=0.9, &beta;<sub>2</sub>=0.98）加一个特殊的学习率调度——<strong>Warmup + Inverse Sqrt Decay</strong>：</p>
+
+  <div class="formula-card">
+    <div class="formula-title">学习率调度（Equation 3）</div>
+    <div class="formula">lr = d<sub>model</sub><sup>&minus;0.5</sup> &middot; min(step<sup>&minus;0.5</sup>, step &middot; warmup_steps<sup>&minus;1.5</sup>)</div>
+    <div class="formula-note">前 4000 步线性增长（warmup），之后按 1/&radic;step 衰减</div>
+  </div>
+
+  <div class="callout callout-why">
+    <span class="callout-label">为什么 Transformer 需要 Warmup</span>
+    训练初期 Adam 的二阶矩 v<sub>t</sub> 估计不准（你在 Lecture 4 学过偏差校正的原因），如果一开始就用大学习率，参数更新方向不稳定，容易发散。Warmup 让学习率从 0 缓慢增长到目标值，给 Adam 的矩估计"热身"的时间。这在后续所有 Transformer 训练中成为标准做法。
+  </div>
+
+  <h3>正则化（Section 5.4）</h3>
+
+  <p>使用了三种正则化：<strong>Residual Dropout</strong>（P<sub>drop</sub> = 0.1）、<strong>Attention Dropout</strong>（对注意力权重做 dropout）和 <strong>Label Smoothing</strong>（&epsilon;<sub>ls</sub> = 0.1，把 one-hot 标签平滑为 [0.9, 0.01, 0.01, ...]）。</p>
+
+  <h3>实验结果（Table 2）</h3>
+
+  <p>在 WMT 2014 英德翻译上，Transformer (big) 以 28.4 BLEU 超越所有模型（包括集成模型），同时<strong>训练时间只需 3.5 天（8 GPU）</strong>——远少于当时最好模型的训练成本。</p>
+
+  <div class="callout callout-insight">
+    <span class="callout-label">Table 3 的关键发现</span>
+    <p><strong>Head 数量</strong>：1 个 head 比 8 个 head 差 0.9 BLEU，说明多头确实有用。但 32 个 head 也开始下降——head 太多时每个 head 的维度太小（16 维），表达能力不够。</p>
+    <p><strong>d<sub>k</sub> 的影响</strong>：减小 d<sub>k</sub>（attention key size）会损害性能，说明点积相似度需要足够的维度来区分不同的匹配模式。</p>
+    <p><strong>Dropout 必要性</strong>：去掉 dropout 后 BLEU 从 25.8 降到 24.6，说明正则化很重要。</p>
+  </div>
+</div>
+
+<!-- ====== SECTION 10 ====== -->
+<div class="section" id="s10">
+  <span class="section-num">PART 10</span>
+  <h2 class="section-title">从论文到 A5：实现指南</h2>
+  <span class="slide-ref">Assignment 5 对应内容</span>
+
+  <p>现在你已经理解了论文，A5 要求你实现 Transformer 的关键组件。以下是论文概念和你代码的对应关系：</p>
+
+  <table>
+    <tr><th>论文概念</th><th>你要实现什么</th><th>核心操作</th></tr>
+    <tr>
+      <td>Scaled Dot-Product Attention</td>
+      <td>Attention 函数</td>
+      <td><code>QK<sup>T</sup>/&radic;d<sub>k</sub></code> → softmax → <code>× V</code></td>
+    </tr>
+    <tr>
+      <td>Multi-Head Attention</td>
+      <td>将 Q/K/V 投影、分头、并行 Attention、拼接</td>
+      <td>reshape/transpose 操作是关键</td>
+    </tr>
+    <tr>
+      <td>Positional Encoding</td>
+      <td>正弦/余弦位置编码</td>
+      <td>生成 PE 矩阵并加到 embedding 上</td>
+    </tr>
+    <tr>
+      <td>Decoder Mask</td>
+      <td>因果 mask 矩阵</td>
+      <td>上三角设为 &minus;&infin; 或 bool mask</td>
+    </tr>
+    <tr>
+      <td>Encoder/Decoder Layer</td>
+      <td>组合 Attention + FFN + 残差 + LayerNorm</td>
+      <td>你已经会的 <code>x + Sublayer(x)</code></td>
+    </tr>
+  </table>
+
+  <div class="callout callout-key">
+    <span class="callout-label">A5 中最容易出错的三个地方</span>
+    <p><strong>① 多头 Attention 的维度变换。</strong> 你需要把 (batch, seq_len, d_model) reshape 成 (batch, n_heads, seq_len, d_k)，然后转置成正确的形状做矩阵乘法。搞混任何一个维度的顺序就会出错。<strong>写注释标注每一步的形状！</strong></p>
+    <p><strong>② Causal Mask 的实现。</strong> Decoder 的 self-attention 需要 mask 未来位置。Mask 矩阵是一个上三角矩阵（上三角部分为 True 或 &minus;&infin;），在 softmax 之前加到 attention score 上。</p>
+    <p><strong>③ 位置编码用加法不是拼接。</strong> PE 和 embedding 形状相同，直接 <code>embedding + PE</code>，不是 concatenate。</p>
+  </div>
+
+  <div class="callout callout-tip">
+    <span class="callout-label">你在 A1–A4 中积累的能力如何帮助你</span>
+    <p><strong>向量化思维（A1 KNN）</strong>→ QK<sup>T</sup> 就是一次矩阵乘法算出所有相似度，和你在 KNN 中用平方展开式一样。</p>
+    <p><strong>Softmax + 数值稳定（A2 线性分类器）</strong>→ Attention 中的 softmax 处理与你在 A2 做的完全一样。</p>
+    <p><strong>反向传播（A2 两层网络）</strong>→ FFN 的前向/反向就是你手写过的两层网络。</p>
+    <p><strong>维度推理（贯穿 A1–A4）</strong>→ Multi-Head Attention 的 reshape/transpose 是终极维度推理考验。</p>
+  </div>
+</div>
+
+<!-- ====== CONNECTIONS ====== -->
+<div class="section" style="margin-top:48px;padding-top:32px;border-top:1px dashed var(--border);">
+  <span class="section-num">CONNECTIONS</span>
+  <h2 class="section-title">这篇论文为什么改变了一切</h2>
+
+  <p>2017 年发表时，Transformer 只是一个优秀的翻译模型。但它的影响远超论文作者的预想：</p>
+
+  <ul>
+    <li><strong>2018 BERT</strong>：只用 Encoder 部分，在 11 个 NLP 任务上刷新纪录</li>
+    <li><strong>2018–2024 GPT 系列</strong>：只用 Decoder 部分，从 GPT-1 到 GPT-4，成为大语言模型的基础</li>
+    <li><strong>2020 ViT</strong>：把 Transformer 搬到图像领域，证明"Attention 也是图像所需要的一切"</li>
+    <li><strong>2021 Stable Diffusion / DALL-E</strong>：用 Transformer 做图像生成</li>
+    <li><strong>2023–2025 多模态模型</strong>：Transformer 统一了文本、图像、音频、视频的处理</li>
+  </ul>
+
+  <p>论文的 8 位作者中，6 位后来离开 Google 创办了各自的 AI 公司（Cohere、Adept、Character.AI、Inceptive 等）。这篇论文是名副其实的"一篇论文创造一个时代"。</p>
+
+  <div class="callout callout-tip" style="margin-top:24px;">
+    <span class="callout-label">下一步</span>
+    你已经完整理解了 Transformer 的设计思想。现在可以带着 A5 的代码文件来找我，我们逐函数实现——从 Scaled Dot-Product Attention 开始，一路到完整的 Transformer Decoder。
+  </div>
+</div>
+
+</div>
+</body>
+</html>
