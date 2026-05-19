@@ -184,7 +184,7 @@ def rnn_forward(x, h0, Wx, Wh, b):
     prev_h = h0
 
     for t in range(T):
-        prev_h, step_cache = rnn_step_forward(x, prev_h, Wx, Wh, b)
+        prev_h, step_cache = rnn_step_forward(x[:, t, :], prev_h, Wx, Wh, b)
         h[:, t, :] = prev_h
         cache.append(step_cache)
     ##########################################################################
@@ -308,7 +308,7 @@ class WordEmbedding(nn.Module):
 
     Args:
         x: Integer array of shape (N, T) giving indices of words. Each element idx
-      of x muxt be in the range 0 <= idx < V.
+      of x must be in the range 0 <= idx < V.
 
     Returns a tuple of:
         out: Array of shape (N, T, D) giving word vectors for all input words.
@@ -319,7 +319,7 @@ class WordEmbedding(nn.Module):
 
         # Register parameters
         self.W_embed = nn.Parameter(
-            torch.randn(vocab_size, embed_size).div(math.sqrt(vocab_size))
+            torch.randn(vocab_size, embed_size).div(math.sqrt(vocab_size))  # (V, D)
         )
 
     def forward(self, x):
@@ -328,15 +328,14 @@ class WordEmbedding(nn.Module):
         ######################################################################
         # TODO: Implement the forward pass for word embeddings.
         ######################################################################
-        # Replace "pass" statement with your code
-        pass
+        out = self.W_embed[x]   # (N, T, D)
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
         return out
 
 
-def temporal_softmax_loss(x, y, ignore_index=None):
+def temporal_softmax_loss(x, y, ignore_index):
     """
     A temporal version of softmax loss for use in RNNs. We assume that we are
     making predictions over a vocabulary of size V for each timestep of a
@@ -359,8 +358,6 @@ def temporal_softmax_loss(x, y, ignore_index=None):
     Returns a tuple of:
         loss: Scalar giving loss
     """
-    loss = None
-
     ##########################################################################
     # TODO: Implement the temporal softmax loss function.
     #
@@ -373,8 +370,12 @@ def temporal_softmax_loss(x, y, ignore_index=None):
     # We use a cross-entropy loss at each timestep, *summing* the loss over
     # all timesteps and *averaging* across the minibatch.
     ##########################################################################
-    # Replace "pass" statement with your code
-    pass
+    loss = F.cross_entropy(
+        x.reshape(-1, x.shape[2]),  # (N*T, V)
+        y.reshape(-1),   # (N*T, )
+        ignore_index=ignore_index,
+        reduction='sum',
+    ) / x.shape[0]
     ##########################################################################
     #                             END OF YOUR CODE                           #
     ##########################################################################
@@ -444,8 +445,21 @@ class CaptioningRNN(nn.Module):
         # (1) output projection (from RNN hidden state to vocab probability)
         # (2) feature projection (from CNN pooled feature to h0)
         ######################################################################
-        # Replace "pass" statement with your code
-        pass
+        # 图像编码
+        self.image_encoder = ImageEncoder(pretrained=image_encoder_pretrained)
+
+        # wordbedding
+        self.wordvec = WordEmbedding(vocab_size, wordvec_dim)
+
+        # RNN...
+        if cell_type == "rnn":
+            self.rnn = RNN(wordvec_dim, hidden_dim)
+
+        # 输出投影 - 词汇表分数
+        self.output_proj = nn.Linear(hidden_dim, vocab_size)
+
+        # 特征投影
+        self.feat_proj = nn.Linear(self.image_encoder.out_channels, hidden_dim)
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
@@ -474,7 +488,6 @@ class CaptioningRNN(nn.Module):
         captions_in = captions[:, :-1]
         captions_out = captions[:, 1:]
 
-        loss = 0.0
         ######################################################################
         # TODO: Implement the forward pass for the CaptioningRNN.
         # In the forward pass you will need to do the following:
@@ -495,8 +508,29 @@ class CaptioningRNN(nn.Module):
         #
         # Do not worry about regularizing the weights or their gradients!
         ######################################################################
-        # Replace "pass" statement with your code
-        pass
+        # 编码图像
+        features = self.image_encoder(images)   # (N, H, 4, 4)
+        
+        if self.cell_type == "attn":
+            return
+        else:
+            pooled =features.mean(dim=(2, 3))   # (N, C)
+            h0 = self.feat_proj(pooled)         # (N, H)
+
+        # WordEmbedding
+        word_vecs = self.wordvec(captions_in)   # (N, T, W)
+
+        # RNN
+        if self.cell_type == "attn":
+            return
+        else:
+            hiddens = self.rnn(word_vecs, h0)   # (N, T, H)
+
+        # 输出
+        scores = self.output_proj(hiddens)
+
+        # Loss
+        loss = temporal_softmax_loss(scores, captions_out, ignore_index=self.ignore_index)
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
