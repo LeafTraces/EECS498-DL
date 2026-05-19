@@ -1,0 +1,32 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VSCode local settings
+.vscode/
+
+# PyTorch / model checkpoints
+*.pt
+*.pth
+*.ckpt
+
+# Datasets
+datasets/
+data/
+
+# Logs
+logs/
+runs/
+
+# OS files
+.DS_Store
+Thumbs.db
