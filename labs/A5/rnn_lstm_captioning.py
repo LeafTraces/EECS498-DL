@@ -456,13 +456,26 @@ class CaptioningRNN(nn.Module):
             self.rnn = RNN(wordvec_dim, hidden_dim)
         elif cell_type == "lstm":
             self.rnn = LSTM(wordvec_dim, hidden_dim)
-
+        elif cell_type == "attn":
+            self.rnn = AttentionLSTM(wordvec_dim, hidden_dim)
 
         # 输出投影 - 词汇表分数
         self.output_proj = nn.Linear(hidden_dim, vocab_size)
 
         # 特征投影
-        self.feat_proj = nn.Linear(self.image_encoder.out_channels, hidden_dim)
+        if cell_type == "attn":
+            self.feat_proj = nn.Conv2d(
+                self.image_encoder.out_channels,
+                hidden_dim,
+                kernel_size=1
+            )
+        else:
+            self.feat_proj = nn.Linear(
+                self.image_encoder.out_channels, 
+                hidden_dim
+            )
+        
+        self.ignore_index = self._null if ignore_index is None else ignore_index
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
@@ -513,21 +526,19 @@ class CaptioningRNN(nn.Module):
         ######################################################################
         # 编码图像
         features = self.image_encoder(images)   # (N, H, 4, 4)
-        
-        if self.cell_type == "attn":
-            return
-        else:
-            pooled = features.mean(dim=(2, 3))  # (N, C)
-            h0 = self.feat_proj(pooled)         # (N, H)
 
         # WordEmbedding
         word_vecs = self.wordvec(captions_in)   # (N, T, W)
-
-        # RNN
+        
         if self.cell_type == "attn":
-            return
+            # feature:  (N, C, 4, 4)
+            # A:        (N, H, 4, 4)
+            A = self.feat_proj(features)
+            hiddens = self.rnn(word_vecs, A)
         else:
-            hiddens = self.rnn(word_vecs, h0)   # (N, T, H)
+            pooled = features.mean(dim=(2, 3))  # (N, C)
+            h0 = self.feat_proj(pooled)         # (N, H)
+            hiddens = self.rnn(word_vecs, h0)   # (N, H)
 
         # 输出
         scores = self.output_proj(hiddens)
@@ -595,13 +606,19 @@ class CaptioningRNN(nn.Module):
         # would both be A.mean(dim=(2, 3)).
         #######################################################################
         features = self.image_encoder(images)   # (N, C, H', W')
-        pooled = features.mean(dim=(2, 3))      # (N, C)
+        
 
         if self.cell_type == "rnn":
+            pooled = features.mean(dim=(2, 3))      # (N, C)
             prev_h = self.feat_proj(pooled)         # (N, H)
         elif self.cell_type == "lstm":
+            pooled = features.mean(dim=(2, 3))      # (N, C)
             prev_h = self.feat_proj(pooled)
             prev_c = torch.zeros_like(prev_h, dtype=prev_h.dtype, device=prev_h.device)
+        elif self.cell_type == "attn":
+            A = self.feat_proj(features)            # (N, H, 4, 4)
+            prev_h = A.mean(dim=(2, 3))             # (N, H)
+            prev_c = prev_h                         # (N, H)
 
         # <START>
         prev_word = torch.full(
@@ -612,14 +629,18 @@ class CaptioningRNN(nn.Module):
         )
 
         for t in range(max_length):
-            # Embed
+            # WordEmbedding
             word_vec = self.wordvec(prev_word)  #(N, W)
 
-            # RNN / lstm
+            # RNN / lstm / attn
             if self.cell_type == "rnn":
                 next_h = self.rnn.step_forward(word_vec, prev_h)    #(N, H)
             elif self.cell_type == "lstm":
                 next_h, next_c = self.rnn.step_forward(word_vec, prev_h, prev_c)
+            elif self.cell_type == "attn":
+                attn, attn_weights = dot_product_attention(prev_h, A)
+                next_h, next_c = self.rnn.step_forward(word_vec, prev_h, prev_c, attn)
+                attn_weights_all[:, t] = attn_weights
 
             # hidden -> vocab
             scores = self.output_proj(next_h) #(N, V)
@@ -633,7 +654,7 @@ class CaptioningRNN(nn.Module):
             prev_word = next_word
             prev_h = next_h
             
-            if self.cell_type == "lstm":
+            if self.cell_type in {"lstm", "attn"}:
                 prev_c = next_c
         ######################################################################
         #                           END OF YOUR CODE                         #
@@ -766,7 +787,6 @@ def dot_product_attention(prev_h, A):
     """
     N, H, D_a, _ = A.shape
 
-    attn, attn_weights = None, None
     ##########################################################################
     # TODO: Implement the scaled dot-product attention we described earlier. #
     # You will use this function for `AttentionLSTM` forward and sample      #
@@ -774,9 +794,13 @@ def dot_product_attention(prev_h, A):
     ##########################################################################
     A_flat = A.reshape(N, H, -1)    # (N, H, 16)
 
-    scores = (prev_h[:, :, None] * A_flat).sum(dim=1)
-    scores = scores / (math.sqrt(H))
+    scores = (prev_h[:, :, None] * A_flat).sum(dim=1)  
+    scores = scores / math.sqrt(H)
 
+    attn_weights_flat = F.softmax(scores, dim=1)    # (N, 16)
+    attn = (attn_weights_flat[:, None, :] * A_flat).sum(dim=2)  # (N, H)
+
+    attn_weights = attn_weights_flat.reshape(N, D_a, D_a)
     ##########################################################################
     #                             END OF YOUR CODE                           #
     ##########################################################################
@@ -837,10 +861,18 @@ class AttentionLSTM(nn.Module):
         #######################################################################
         # TODO: Implement forward pass for a single timestep of attention LSTM.
         # Feel free to re-use some of your code from `LSTM.step_forward()`.
-        #######################################################################
-        next_h, next_c = None, None
-        # Replace "pass" statement with your code
-        pass
+        #######################################################################    
+        a = x @ self.Wx + prev_h @ self.Wh + attn @ self.Wattn + self.b # (N, 4H)
+
+        ai, af, ao, ag = a.chunk(4, dim=1)  # (N, H)
+
+        i = torch.sigmoid(ai)
+        f = torch.sigmoid(af)
+        o = torch.sigmoid(ao)
+        g = torch.tanh(ag)
+
+        next_c = f * prev_c + i * g
+        next_h = o * torch.tanh(next_c)
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
@@ -881,9 +913,22 @@ class AttentionLSTM(nn.Module):
         # series. You should use the `dot_product_attention` function that   #
         # is defined outside this module.                                    #
         ######################################################################
-        hn = None
-        # Replace "pass" statement with your code
-        pass
+        N, T, D = x.shape
+        H = h0.shape[1]
+
+        prev_h = h0
+        prev_c = c0
+
+        hn = torch.zeros(N, T, H, dtype=x.dtype, device=x.device)
+
+        for t in range(T):
+            attn, _ = dot_product_attention(prev_h, A) # (N, H)
+            next_h, next_c = self.step_forward(x[:, t, :], prev_h, prev_c, attn)
+            
+            hn[:, t, :] = next_h
+
+            prev_h = next_h
+            prev_c = next_c
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
