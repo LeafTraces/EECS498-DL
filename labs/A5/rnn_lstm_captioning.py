@@ -451,9 +451,12 @@ class CaptioningRNN(nn.Module):
         # wordbedding
         self.wordvec = WordEmbedding(vocab_size, wordvec_dim)
 
-        # RNN...
+        # RNN / lstm / attn
         if cell_type == "rnn":
             self.rnn = RNN(wordvec_dim, hidden_dim)
+        elif cell_type == "lstm":
+            self.rnn = LSTM(wordvec_dim, hidden_dim)
+
 
         # 输出投影 - 词汇表分数
         self.output_proj = nn.Linear(hidden_dim, vocab_size)
@@ -514,7 +517,7 @@ class CaptioningRNN(nn.Module):
         if self.cell_type == "attn":
             return
         else:
-            pooled =features.mean(dim=(2, 3))   # (N, C)
+            pooled = features.mean(dim=(2, 3))  # (N, C)
             h0 = self.feat_proj(pooled)         # (N, H)
 
         # WordEmbedding
@@ -591,8 +594,47 @@ class CaptioningRNN(nn.Module):
         # to $A$ of shape Hx4x4. The LSTM initial hidden state and cell state
         # would both be A.mean(dim=(2, 3)).
         #######################################################################
-        # Replace "pass" statement with your code
-        pass
+        features = self.image_encoder(images)   # (N, C, H', W')
+        pooled = features.mean(dim=(2, 3))      # (N, C)
+
+        if self.cell_type == "rnn":
+            prev_h = self.feat_proj(pooled)         # (N, H)
+        elif self.cell_type == "lstm":
+            prev_h = self.feat_proj(pooled)
+            prev_c = torch.zeros_like(prev_h, dtype=prev_h.dtype, device=prev_h.device)
+
+        # <START>
+        prev_word = torch.full(
+            (N, ),
+            self._start,
+            dtype=torch.long,
+            device=images.device,
+        )
+
+        for t in range(max_length):
+            # Embed
+            word_vec = self.wordvec(prev_word)  #(N, W)
+
+            # RNN / lstm
+            if self.cell_type == "rnn":
+                next_h = self.rnn.step_forward(word_vec, prev_h)    #(N, H)
+            elif self.cell_type == "lstm":
+                next_h, next_c = self.rnn.step_forward(word_vec, prev_h, prev_c)
+
+            # hidden -> vocab
+            scores = self.output_proj(next_h) #(N, V)
+
+            # 选择最高分
+            next_word = scores.argmax(dim=1)
+
+            # 写入caption
+            captions[:, t] = next_word
+
+            prev_word = next_word
+            prev_h = next_h
+            
+            if self.cell_type == "lstm":
+                prev_c = next_c
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
@@ -651,9 +693,16 @@ class LSTM(nn.Module):
         ######################################################################
         # TODO: Implement the forward pass for a single timestep of an LSTM.
         ######################################################################
-        next_h, next_c = None, None
-        # Replace "pass" statement with your code
-        pass
+        a = x @ self.Wx + prev_h @ self.Wh + self.b # (N, 4H)
+        ai, af, ao, ag = a.chunk(4, dim=1)  # (N, H)
+
+        i = torch.sigmoid(ai)
+        f = torch.sigmoid(af)
+        o = torch.sigmoid(ao)
+        g = torch.tanh(ag)
+
+        next_c = f * prev_c + i * g
+        next_h = o * torch.tanh(next_c)
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
@@ -685,9 +734,15 @@ class LSTM(nn.Module):
         ######################################################################
         # TODO: Implement the forward pass for an LSTM over entire timeseries
         ######################################################################
-        hn = None
-        # Replace "pass" statement with your code
-        pass
+        N, T, D = x.shape
+        H = h0.shape[1]
+        prev_h = h0
+        prev_c = c0
+        hn = torch.zeros(N, T, H, dtype=x.dtype, device=x.device)
+        for t in range(T):
+            prev_h, prev_c = self.step_forward(x[:, t, :], prev_h, prev_c)
+            
+            hn[:, t, :] = prev_h
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
@@ -717,8 +772,11 @@ def dot_product_attention(prev_h, A):
     # You will use this function for `AttentionLSTM` forward and sample      #
     # functions. HINT: Make sure you reshape attn_weights back to (N, 4, 4)! #
     ##########################################################################
-    # Replace "pass" statement with your code
-    pass
+    A_flat = A.reshape(N, H, -1)    # (N, H, 16)
+
+    scores = (prev_h[:, :, None] * A_flat).sum(dim=1)
+    scores = scores / (math.sqrt(H))
+
     ##########################################################################
     #                             END OF YOUR CODE                           #
     ##########################################################################
