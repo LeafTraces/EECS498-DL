@@ -20,7 +20,7 @@
 - **前半部分** — 基础：PyTorch 基础、线性分类器、优化算法、神经网络、反向传播、卷积神经网络 (CNN)。
 - **后半部分** — 应用：目标检测、循环神经网络 (RNN)、Transformer、生成模型 (VAE, GAN)、网络可视化、风格迁移。
 
-参考教材：[Deep Learning — Goodfellow, Bengio &amp; Courville](https://www.deeplearningbook.org/)（中文常称《花书》）
+参考教材：[Deep Learning — Goodfellow, Bengio &amp; Courville](https://www.deeplearningbook.org/)（《花书》）
 
 ---
 
@@ -32,7 +32,7 @@
 | A2           | 线性分类器：SVM, Softmax, 双层神经网络              | ✅ 已完成 |
 | A3           | 全连接网络与卷积神经网络                            | ✅ 已完成 |
 | A4           | 目标检测：单阶段与双阶段检测器                      | ✅ 已完成 |
-| A5           | RNN, LSTM, 注意力机制与 Transformers                | ⬜ 未开始 |
+| A5           | RNN, LSTM, 注意力机制与 Transformers                | 🚧 进行中 |
 | A6           | 生成模型 (VAE, GAN), 网络可视化, 风格迁移           | ⬜ 未开始 |
 | Mini-Project | 端到端深度学习流水线 (数据 → 模型 → 训练 → 评估) | ⬜ 未开始 |
 
@@ -44,4 +44,4 @@
 
 - Python 3.x
 - PyTorch
-- Google Colab (课程推荐使用)
+- Google Colab
