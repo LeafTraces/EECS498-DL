@@ -32,8 +32,8 @@ def generate_token_dict(vocab):
     # vocab to 0 and the last element in the vocab to len(vocab), and the        #
     # elements in between as consequetive number.                                #
     ##############################################################################
-    # Replace "pass" statement with your code
-    pass
+    for i, token in enumerate(vocab):
+        token_dict[token] = i
     ##############################################################################
     #               END OF YOUR CODE                                             #
     ##############################################################################
@@ -55,7 +55,6 @@ def prepocess_input_sequence(
     args:
         input_str: A single string in the input data
                  e.g.: "BOS POSITIVE 0333 add POSITIVE 0696 EOS"
-
         token_dict: The token dictionary having key as elements in the string and
             value as a unique positive integer. This is generated  using
             generate_token_dict fucntion
@@ -73,8 +72,14 @@ def prepocess_input_sequence(
     # from token_dict. For special tokens present in the input string, assign an
     # appropriate value for the complete token.
     ##############################################################################
-    # Replace "pass" statement with your code
-    pass
+    tokens = input_str.split()
+    
+    for token in tokens:
+        if token in spc_tokens:
+            out.append(token_dict[token])
+        else:
+            for digit in token:
+                out.append(token_dict[digit])
     ##############################################################################
     #               END OF YOUR CODE                                             #
     ##############################################################################
@@ -115,8 +120,17 @@ def scaled_dot_product_two_loop_single(
     # sum of values using the matrix-vector product. This single vector computed  #
     # using weighted sum becomes an output to the Kth query vector                #
     ###############################################################################
-    # Replace "pass" statement with your code
-    pass
+    K, M = query.shape
+    out = torch.zeros_like(query)
+
+    for i in range(K):
+        scores = torch.zeros(K, device=query.device)
+        for j in range(K):
+            scores[j] = torch.dot(query[i], key[j])
+        scores /= (M ** 0.5)
+        weights = F.softmax(scores, dim=0)  #(K, )
+        weights = weights.unsqueeze(1)      #(K, 1)
+        out[i] = (weights * value).sum(dim=0)
     ##############################################################################
     #               END OF YOUR CODE                                             #
     ##############################################################################
@@ -162,8 +176,14 @@ def scaled_dot_product_two_loop_batch(
     # use them to compute weighted average of value matrix.                       #
     # Hint: look at torch.bmm                                                     #
     ###############################################################################
-    # Replace "pass" statement with your code
-    pass
+    out = torch.zeros_like(query)
+    for n in range(N):
+        for i in range(K):
+            scores = key[n] @ query[n, i]       # (K,)
+            scores /= (M ** 0.5)
+            weights = F.softmax(scores, dim=0)  # (K,)
+
+            out[n, i] = (weights[:, None] * value[n]).sum(dim=0)    # (M,)
     ##############################################################################
     #               END OF YOUR CODE                                             #
     ##############################################################################
@@ -205,8 +225,6 @@ def scaled_dot_product_no_loop_batch(
     """
 
     _, _, M = query.shape
-    y = None
-    weights_softmax = None
     ###############################################################################
     # TODO: This function performs same function as self_attention_two_loop_batch #
     # Implement this function using no loops.                                     #
@@ -217,17 +235,16 @@ def scaled_dot_product_no_loop_batch(
     # weights can then be softmaxed to compute the final weighted sum of values   #
     # Hint: look at torch.bmm and torch.masked_fill                               #
     ###############################################################################
-    # Replace "pass" statement with your code
-    pass
+    weights = torch.bmm(query, key.transpose(1, 2)) / (M ** 0.5)    # (N, K, K)
     if mask is not None:
         ##########################################################################
         # TODO: Apply the mask to the weight matrix by assigning -1e9 to the     #
         # positions where the mask value is True, otherwise keep it as it is.    #
         ##########################################################################
-        # Replace "pass" statement with your code
-        pass
-    # Replace "pass" statement with your code
-    pass
+        weights = weights.masked_fill(mask, -1e9)
+         
+    weights_softmax = F.softmax(weights, dim=2) # (N, K, K)
+    y = torch.bmm(weights_softmax, value)
     ##############################################################################
     #               END OF YOUR CODE                                             #
     ##############################################################################
@@ -249,9 +266,6 @@ class SelfAttention(nn.Module):
             dim_v: an int value for output dimension for value vectors
 
         """
-        self.q = None  # initialize for query
-        self.k = None  # initialize for key
-        self.v = None  # initialize for value
         self.weights_softmax = None
         ##########################################################################
         # TODO: This function initializes three functions to transform the 3 input
@@ -267,8 +281,13 @@ class SelfAttention(nn.Module):
         # Please use the same names for query, key and value transformations     #
         # as given above. self.q, self.k, and self.v respectively.               #
         ##########################################################################
-        # Replace "pass" statement with your code
-        pass
+        self.q = nn.Linear(dim_in, dim_q)
+        self.k = nn.Linear(dim_in, dim_q)
+        self.v = nn.Linear(dim_in, dim_v)
+
+        for layer in [self.q, self.k, self.v]:
+            c = (6 / (layer.in_features + layer.out_features)) ** 0.5
+            nn.init.uniform_(layer.weight, -c, c)
         ##########################################################################
         #               END OF YOUR CODE                                         #
         ##########################################################################
@@ -288,10 +307,6 @@ class SelfAttention(nn.Module):
         return:
             y: Tensor of shape (N, K, dim_v)
         """
-        self.weights_softmax = (
-            None  # weight matrix after applying self_attention_no_loop_batch
-        )
-        y = None
         ##########################################################################
         # TODO: Use the functions initialized in the init fucntion to find the   #
         # output tensors. Precisely, pass the inputs query, key and value to the #
@@ -302,8 +317,11 @@ class SelfAttention(nn.Module):
         # of output weight matrix from self_attention_no_loop_batch to the       #
         # variable self.weights_softmax                                          #
         ##########################################################################
-        # Replace "pass" statement with your code
-        pass
+        Q = self.q(query)   # (N, K, dim_q)
+        K = self.k(key)     # (N, K, dim_q)
+        V = self.v(value)    # (N, K, dim_v)
+
+        y, self.weights_softmax = scaled_dot_product_no_loop_batch(Q, K, V, mask)
         ##########################################################################
         #               END OF YOUR CODE                                         #
         ##########################################################################
@@ -353,8 +371,14 @@ class MultiHeadAttention(nn.Module):
         # dim_in. Initialize the weights using the strategy mentioned in         #
         # SelfAttention.                                                         #
         ##########################################################################
-        # Replace "pass" statement with your code
-        pass
+        self.heads = nn.ModuleList(
+            SelfAttention(dim_in, dim_out, dim_out)
+            for _ in range(num_heads)
+            )
+        
+        self.linear = nn.Linear(num_heads * dim_out, dim_in)
+        c = (6 / (num_heads * dim_out + dim_in)) ** 0.5
+        nn.init.uniform_(self.linear.weight, -c, c)
         ##########################################################################
         #               END OF YOUR CODE                                         #
         ##########################################################################
@@ -386,7 +410,6 @@ class MultiHeadAttention(nn.Module):
         returns:
             y: Tensor of shape (N, K, M)
         """
-        y = None
         ##########################################################################
         # TODO: You need to perform a forward pass through the MultiHeadAttention#
         # block using the variables defined in the initializing function. The    #
@@ -397,8 +420,9 @@ class MultiHeadAttention(nn.Module):
         # output. Concatenate this list if tensors and pass them through the     #
         # nn.Linear mapping function defined in the initialization step.         #
         ##########################################################################
-        # Replace "pass" statement with your code
-        pass
+        head_outputs = [head.forward(query, key, value, mask) for head in self.heads]
+        concat = torch.cat(head_outputs, dim=2)
+        y = self.linear(concat)
         ##########################################################################
         #               END OF YOUR CODE                                         #
         ##########################################################################
